@@ -11,7 +11,19 @@ class UserModel {
   }
 
   static async register(newUser) {
+
+    if(!newUser.username){
+      throw new Error("Username is required");
+    }
+    if(!newUser.email){
+      throw new Error("Email is required");
+    }
+    if(!newUser.password){
+      throw new Error("Password is required");
+    }
+    
     return await this.collection().insertOne(newUser);
+    
   }
 
   static async login(email, password) {

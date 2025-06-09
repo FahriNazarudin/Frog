@@ -41,8 +41,7 @@ const userResolvers = {
     },
 
     login: async (_, { email, password }) => {
-      const user = await UserModel.login(email, password);
-
+      await UserModel.login(email, password);
       return user;
     },
   },
