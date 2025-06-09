@@ -9,13 +9,14 @@ const userTypeDefs = `#graphql
     }
   
     type Query {
-      getUsers: [User],
+      getUsers: [User]
+      getUserByUsername(username: String): [User]
+      
     }
 
     type Mutation {
       register(name :String, username: String, email : String, password: String) : User
-    
-    login(email: String, password: String): User
+      login(email: String, password: String): User
     }   
 
 
@@ -25,6 +26,10 @@ const userResolvers = {
   Query: {
     getUsers: async () => {
       return await UserModel.getUsers();
+    },
+    getUserByUsername: async (_, { username }) => {
+      const foundUser = await UserModel.getUserByUsername(username);
+      return foundUser;
     },
   },
 
