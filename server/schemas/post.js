@@ -1,39 +1,90 @@
-const Posts = [
-  {
-    content: "Post1",
-    tag: "tag1",
-    imgUrl: "https://example.com/post1.jpg",
-    likes: 10,
-    createdAt: "2023-10-01T12:00:00Z",
-    updatedAt: "2023-10-01T12:00:00Z",
-  },
-  {
-    content: "Post2",
-    tag: "tag2",
-    imgUrl: "https://example.com/post2.jpg",
-    likes: 11,
-    createdAt: "2023-10-02T12:00:00Z",
-    updatedAt: "2023-10-02T12:00:00Z",
-  },
-];
+const { PostModel } = require("../models/PostModel");
 
 const postTypeDefs = `#graphql
     type Post {
-    content: String,
-    tag: String,
-    imgUrl: String,
-    createdAt: String,
-    updatedAt: String,
+        _id: ID
+        content: String
+        tag: String
+        imgUrl: String
+        authorId: ID
+        comments: [Comment]
+        likes: [Like]
+        createdAt: String
+        updatedAt: String
     }
 
-    type Query {
-      getPost: [Post]
+    type Comment {
+        content: String
+        username: String
+        createdAt: String
+        updatedAt: String
     }
-  `;
+    
+    type Like {
+        username: String
+        createdAt: String
+        updatedAt: String
+    }
+
+    extend type Query {
+        getPosts: [Post]
+        getPostById(id: ID!): Post
+    }
+    
+    extend type Mutation {
+        addPost(content: String, tag: String, imgUrl: String, authorId: ID): Post
+        addComment(postId: ID, content: String, username: String): String
+        addLike(postId: ID, username: String): String
+    }
+`;
 
 const postResolvers = {
   Query: {
-    getPost: () => Posts,
+    getPosts: async () => {
+      return await PostModel.getPosts();
+    },
+
+    getPostById: async (_, { id }) => {
+      return await PostModel.getPostById(id);
+    },
+  },
+
+  Mutation: {
+    addPost: async (_, { content, tag, imgUrl, authorId }) => {
+      const newPost = {
+        content,
+        tag,
+        imgUrl,
+        authorId,
+        comments: [],
+        likes: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const result = await PostModel.addPost(newPost);
+      return { _id: result.insertedId, ...newPost };
+    },
+
+    addComment: async (_, { postId, content, username }) => {
+      const newComment = {
+        content,
+        username,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await PostModel.addComment(postId, newComment);
+      return "Comment added successfully";
+    },
+
+    addLike: async (_, { postId, username }) => {
+      const newLike = {
+        username,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await PostModel.addLike(postId, newLike);
+      return "Like added successfully";
+    },
   },
 };
 
