@@ -1,4 +1,4 @@
-const {UserModel} = require('../models/UserModel');
+const { UserModel } = require("../models/UserModel");
 const userTypeDefs = `#graphql
     type User {
         _id: ID,
@@ -14,16 +14,19 @@ const userTypeDefs = `#graphql
 
     type Mutation {
       register(name :String, username: String, email : String, password: String) : User
-    }
+    
+    login(email: String, password: String): User
+    }   
+
 
   `;
 
 const userResolvers = {
   Query: {
     getUsers: async () => {
-        return await UserModel.getUsers();
+      return await UserModel.getUsers();
     },
-},
+  },
 
   Mutation: {
     register: async (_, { name, username, email, password }) => {
@@ -32,9 +35,15 @@ const userResolvers = {
         username,
         email,
         password,
-      }
+      };
       await UserModel.register(newUser);
       return newUser;
+    },
+
+    login: async (_, { email, password }) => {
+      const user = await UserModel.login(email, password);
+
+      return user;
     },
   },
 };

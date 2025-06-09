@@ -13,6 +13,14 @@ class UserModel {
   static async register(newUser) {
     return await this.collection().insertOne(newUser);
   }
+
+  static async login(email, password) {
+    const user = await this.collection().findOne({ email, password });
+    if (!user) {
+      throw new Error("Invalid email or password");
+    }
+    return user;
+  }
 }
 
 module.exports = { UserModel };
