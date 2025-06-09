@@ -10,6 +10,7 @@ const userTypeDefs = `#graphql
   
     type Query {
       getUsers: [User]
+      getUserById(id: ID): User
       getUserByUsername(username: String): [User]
       
     }
@@ -27,6 +28,11 @@ const userResolvers = {
     getUsers: async () => {
       return await UserModel.getUsers();
     },
+    getUserById: async (_, { id }) => {
+      const foundUser = await UserModel.getUserById(id);
+      return foundUser;
+    },
+
     getUserByUsername: async (_, { username }) => {
       const foundUser = await UserModel.getUserByUsername(username);
       return foundUser;

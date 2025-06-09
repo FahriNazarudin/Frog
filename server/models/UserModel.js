@@ -9,14 +9,24 @@ class UserModel {
   static async getUsers() {
     return await this.collection().find({}).toArray();
   }
+
+  static async getUserById(id) {
+    if (!id) {
+      throw new Error("User ID is required");
+    }
+    return await this.collection().findOne({ _id: new ObjectId(id) });
+  }
   
+
   static async getUserByUsername(username = "") {
-    const users = await this.collection().find({ 
-      username : {
-        $regex: username,
-        $options: "i" 
-      }
-    }).toArray();
+    const users = await this.collection()
+      .find({
+        username: {
+          $regex: username,
+          $options: "i",
+        },
+      })
+      .toArray();
     return users;
   }
 
