@@ -1,5 +1,6 @@
 const { ObjectId } = require("mongodb");
 const { database } = require("../config/mongodb");
+const { hashPassword } = require("../helpers/bcrypt");
 
 class UserModel {
   static collection() {
@@ -31,17 +32,34 @@ class UserModel {
   }
 
   static async register(newUser) {
-    if (!newUser.username) {
-      throw new Error("Username is required");
+    if (!newUser.name || !newUser.username || !newUser.email || !newUser.password) {
+      throw new Error("Username, Name, Email, Password is required");
     }
-    if (!newUser.email) {
-      throw new Error("Email is required");
+   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+   if (!emailRegex.test(newUser.email)) {
+      throw new Error("Invalid email format");
     }
-    if (!newUser.password) {
-      throw new Error("Password is required");
+    if (newUser.password.length < 5) {
+      throw new Error("Password must be at least 5 characters long");
     }
 
-    return await this.collection().insertOne(newUser);
+    const existingUser = await this.collection().findOne({
+      $or: [
+        { username: newUser.username }, 
+        { email: newUser.email }
+      ],
+    });
+    if (existingUser) {
+      throw new Error("Username or Email already exists");
+    }
+
+    newUser.password = hashPassword(newUser.password);
+    newUser.createdAt = new Date();
+    newUser.updatedAt = new Date();
+
+    await this.collection().insertOne(newUser);
+
+    return "User registered successfully";
   }
 
   static async login(email, password) {
