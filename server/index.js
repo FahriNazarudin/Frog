@@ -27,7 +27,7 @@ startStandaloneServer(server, {
 
         const token = authHeader.split(" ")[1];
         const payload = verifyToken(token);
-        if(!payload) {
+        if(!payload || !payload.id) {
           throw new Error("Invalid token")
         }
 

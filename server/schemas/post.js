@@ -54,12 +54,12 @@ const postResolvers = {
 
   Mutation: {
     addPost: async (_, { content, tag, imgUrl, authorId }, { auth }) => {
-      await auth();
+      const user = await auth();
       const newPost = {
         content,
         tag,
         imgUrl,
-        authorId,
+        authorId : user._id,
         comments: [],
         likes: [],
         createdAt: new Date(),
@@ -70,10 +70,10 @@ const postResolvers = {
     },
 
     addComment: async (_, { postId, content, username }, { auth }) => {
-      await auth();
+      const user = await auth();
       const newComment = {
         content,
-        username,
+        username : user.username,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -82,9 +82,9 @@ const postResolvers = {
     },
 
     addLike: async (_, { postId, username }, { auth }) => {
-      await auth();
+      const user = await auth();
       const newLike = {
-        username,
+        username : user.username,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
