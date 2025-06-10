@@ -34,7 +34,8 @@ const postTypeDefs = `#graphql
 
      type Query {
         getPosts: [Post]
-        getPostById(id: ID!): Post
+        getPostById(id: ID): Post
+        getPostByContent(content: String): [Post]
     }
     
      type Mutation {
@@ -56,6 +57,12 @@ const postResolvers = {
       await auth();
       return await PostModel.getPostById(id);
     },
+
+    getPostByContent: async (_, { content }, { auth }) => {
+      await auth();
+      const posts = await PostModel.getPosts(content);
+      return posts;
+    },
   },
 
   Mutation: {
@@ -65,7 +72,7 @@ const postResolvers = {
         content,
         tag,
         imgUrl,
-        authorId : user._id,
+        authorId: user._id,
         comments: [],
         likes: [],
         createdAt: new Date(),
@@ -79,7 +86,7 @@ const postResolvers = {
       const user = await auth();
       const newComment = {
         content,
-        username : user.username,
+        username: user.username,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -90,7 +97,7 @@ const postResolvers = {
     addLike: async (_, { postId }, { auth }) => {
       const user = await auth();
       const newLike = {
-        username : user.username,
+        username: user.username,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

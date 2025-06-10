@@ -27,7 +27,7 @@ class PostModel {
       {
         $unwind: {
           path: "$authorDetail",
-          preserveNullAndEmptyArrays: false,
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
