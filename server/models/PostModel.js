@@ -6,8 +6,50 @@ class PostModel {
     return database.collection("posts");
   }
 
-  static async getPosts() {
-    return await this.collection().find({}).toArray();
+  static async getPosts(content = "") {
+    const agg = [
+      {
+        $match: {
+          content: {
+            $regex: content,
+            $options: "i",
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "authorDetail",
+        },
+      },
+      {
+        $unwind: {
+          path: "$authorDetail",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $project: {
+          "authorDetail.password": false,
+          "authorDetail.createdAt": false,
+          "authorDetail.updatedAt": false,
+        },
+      },
+    ];
+    const post =  await this.collection()
+      // .find({
+      //   content: {
+      //     $regex: content,
+      //     $options: "i",
+      //   },
+      // })
+      .aggregate(agg)
+      .toArray();
+      console.log(post);
+      
+      return post
   }
 
   static async getPostById(id) {
@@ -57,7 +99,6 @@ class PostModel {
     if (!newLike.username) {
       throw new Error("Username is required");
     }
-
 
     const existingLike = await this.collection().findOne({
       _id: new ObjectId(postId),

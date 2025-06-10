@@ -6,11 +6,17 @@ const postTypeDefs = `#graphql
         content: String
         tag: String
         imgUrl: String
-        authorId: ID
         comments: [Comment]
         likes: [Like]
         createdAt: String
         updatedAt: String
+        authorDetail: authorDetail
+    }
+    type authorDetail {
+        _id: ID
+        name: String
+        username: String
+        email: String
     }
 
     type Comment {
@@ -26,12 +32,12 @@ const postTypeDefs = `#graphql
         updatedAt: String
     }
 
-    extend type Query {
+     type Query {
         getPosts: [Post]
         getPostById(id: ID!): Post
     }
     
-    extend type Mutation {
+     type Mutation {
         addPost(content: String, tag: String, imgUrl: String, authorId: ID): Post
         addComment(postId: ID, content: String, username: String): String
         addLike(postId: ID, username: String): String
@@ -53,7 +59,7 @@ const postResolvers = {
   },
 
   Mutation: {
-    addPost: async (_, { content, tag, imgUrl, authorId }, { auth }) => {
+    addPost: async (_, { content, tag, imgUrl }, { auth }) => {
       const user = await auth();
       const newPost = {
         content,
@@ -65,11 +71,11 @@ const postResolvers = {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const result = await PostModel.addPost(newPost);
-      return { _id: result.insertedId, ...newPost };
+      await PostModel.addPost(newPost);
+      return newPost;
     },
 
-    addComment: async (_, { postId, content, username }, { auth }) => {
+    addComment: async (_, { postId, content }, { auth }) => {
       const user = await auth();
       const newComment = {
         content,
@@ -81,7 +87,7 @@ const postResolvers = {
       return "Comment added successfully";
     },
 
-    addLike: async (_, { postId, username }, { auth }) => {
+    addLike: async (_, { postId }, { auth }) => {
       const user = await auth();
       const newLike = {
         username : user.username,
