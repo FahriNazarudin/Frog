@@ -1,6 +1,7 @@
 const { ObjectId } = require("mongodb");
 const { database } = require("../config/mongodb");
-const { hashPassword } = require("../helpers/bcrypt");
+const { hashPassword, comparePassword } = require("../helpers/bcrypt");
+
 
 class UserModel {
   static collection() {
@@ -17,7 +18,6 @@ class UserModel {
     }
     return await this.collection().findOne({ _id: new ObjectId(id) });
   }
-  
 
   static async getUserByUsername(username = "") {
     const users = await this.collection()
@@ -32,11 +32,16 @@ class UserModel {
   }
 
   static async register(newUser) {
-    if (!newUser.name || !newUser.username || !newUser.email || !newUser.password) {
+    if (
+      !newUser.name ||
+      !newUser.username ||
+      !newUser.email ||
+      !newUser.password
+    ) {
       throw new Error("Username, Name, Email, Password is required");
     }
-   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-   if (!emailRegex.test(newUser.email)) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUser.email)) {
       throw new Error("Invalid email format");
     }
     if (newUser.password.length < 5) {
@@ -44,10 +49,7 @@ class UserModel {
     }
 
     const existingUser = await this.collection().findOne({
-      $or: [
-        { username: newUser.username }, 
-        { email: newUser.email }
-      ],
+      $or: [{ username: newUser.username }, { email: newUser.email }],
     });
     if (existingUser) {
       throw new Error("Username or Email already exists");
@@ -62,13 +64,24 @@ class UserModel {
     return "User registered successfully";
   }
 
-  static async login(email, password) {
-    const user = await this.collection().findOne({ email, password });
+  static async findOne(query) {
+    return await this.collection().findOne(query);
+  }
+
+  static async login(username, password) {
+    const user = await this.collection().findOne({ username });
     if (!user) {
-      throw new Error("Invalid email or password");
+      throw new Error("Invalid username/password")
     }
+    const isPasswordValid = comparePassword(password, user.password);
+    if (!isPasswordValid) {
+      throw new Error("Invalid username/password");
+    } 
+
     return user;
   }
 }
+
+
 
 module.exports = { UserModel };

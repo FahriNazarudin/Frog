@@ -5,5 +5,9 @@ const hashPassword = (password) => {
     return hashSync(password, saltRounds);
 }
 
+const comparePassword = (password, hashedPassword) => {
+    return compareSync(password, hashedPassword);
+}
 
-module.exports = { hashPassword }
+
+module.exports = { hashPassword, comparePassword };

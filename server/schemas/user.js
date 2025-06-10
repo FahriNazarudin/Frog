@@ -1,4 +1,7 @@
+const { comparePassword } = require("../helpers/bcrypt");
+const { signToken } = require("../helpers/jwt");
 const { UserModel } = require("../models/UserModel");
+
 const userTypeDefs = `#graphql
     type User {
         _id: ID,
@@ -15,9 +18,13 @@ const userTypeDefs = `#graphql
       
     }
 
+    type LoginResponse {
+      accessToken: String
+    }
+
     type Mutation {
-      register(name :String, username: String, email : String, password: String) : String
-      login(username: String, password: String): User
+      register(name : String, username: String, email : String, password: String) : String
+      login(username: String, password: String): LoginResponse
     }   
   `;
 
@@ -39,14 +46,18 @@ const userResolvers = {
 
   Mutation: {
     register: async (_, { name, username, email, password }) => {
-      const newUser = {name, username ,email ,password};
+      const newUser = { name, username, email, password };
       await UserModel.register(newUser);
       return "User registered successfully";
     },
 
-    login: async (_, { email, password }) => {
-      await UserModel.login(email, password);
-      return user;
+    login: async (_, { username, password }) => {
+      const user = await UserModel.login(username, password);
+      const accessToken = signToken({
+        id: user._id,
+        username: user.username,
+      });
+      return { accessToken };
     },
   },
 };
