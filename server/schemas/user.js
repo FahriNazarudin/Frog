@@ -30,15 +30,18 @@ const userTypeDefs = `#graphql
 
 const userResolvers = {
   Query: {
-    getUsers: async () => {
+    getUsers: async (_, args, { auth }) => {
+      await auth();
       return await UserModel.getUsers();
     },
-    getUserById: async (_, { id }) => {
+    getUserById: async (_, { id }, { auth }) => {
+      await auth();
       const foundUser = await UserModel.getUserById(id);
       return foundUser;
     },
 
-    getUserByUsername: async (_, { username }) => {
+    getUserByUsername: async (_, { username }, { auth }) => {
+      await auth();
       const foundUser = await UserModel.getUserByUsername(username);
       return foundUser;
     },

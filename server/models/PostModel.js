@@ -58,7 +58,7 @@ class PostModel {
       throw new Error("Username is required");
     }
 
-    // Check if user already liked the post
+
     const existingLike = await this.collection().findOne({
       _id: new ObjectId(postId),
       "likes.username": newLike.username,

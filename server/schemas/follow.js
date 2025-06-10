@@ -17,40 +17,45 @@ const followTypeDefs = `#graphql
         createdAt: String
     }
 
-    type Query {
-        getFollowers(userId: ID): [FollowUser]
-        getFollowing(userId: ID): [FollowUser]
-        isFollowing(followerId: ID, followingId: ID): Boolean
+    extend type Query {
+        getFollowers(userId: ID!): [FollowUser]
+        getFollowing(userId: ID!): [FollowUser]
+        isFollowing(followerId: ID!, followingId: ID!): Boolean
     }
 
-    type Mutation {
-        followUser(followerId: ID, followingId: ID): String
-        unfollowUser(followerId: ID, followingId: ID): String
+    extend type Mutation {
+        followUser(followerId: ID!, followingId: ID!): String
+        unfollowUser(followerId: ID!, followingId: ID!): String
     }
 `;
 
 const followResolvers = {
   Query: {
-    getFollowers: async (_, { userId }) => {
+    getFollowers: async (_, { userId }, { auth }) => {
+      await auth(); 
       return await FollowModel.getFollowers(userId);
     },
 
-    getFollowing: async (_, { userId }) => {
+    getFollowing: async (_, { userId }, { auth }) => {
+      await auth(); 
       return await FollowModel.getFollowing(userId);
     },
 
-    isFollowing: async (_, { followerId, followingId }) => {
+    isFollowing: async (_, { followerId, followingId }, { auth }) => {
+      await auth(); 
       return await FollowModel.isFollowing(followerId, followingId);
     },
   },
 
   Mutation: {
-    followUser: async (_, { followerId, followingId }) => {
+    followUser: async (_, { followerId, followingId }, { auth }) => {
+      await auth(); 
       await FollowModel.followUser(followerId, followingId);
       return "Successfully followed user";
     },
 
-    unfollowUser: async (_, { followerId, followingId }) => {
+    unfollowUser: async (_, { followerId, followingId }, { auth }) => {
+      await auth(); 
       const result = await FollowModel.unfollowUser(followerId, followingId);
       if (result.deletedCount === 0) {
         throw new Error("Follow relationship not found");

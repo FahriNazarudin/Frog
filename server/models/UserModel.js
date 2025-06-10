@@ -16,7 +16,11 @@ class UserModel {
     if (!id) {
       throw new Error("User ID is required");
     }
-    return await this.collection().findOne({ _id: new ObjectId(id) });
+    const user = await this.collection().findOne({ _id: new ObjectId(id) });
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user;
   }
 
   static async getUserByUsername(username = "") {
@@ -71,12 +75,12 @@ class UserModel {
   static async login(username, password) {
     const user = await this.collection().findOne({ username });
     if (!user) {
-      throw new Error("Invalid username/password")
+      throw new Error("Invalid username/password");
     }
     const isPasswordValid = comparePassword(password, user.password);
     if (!isPasswordValid) {
       throw new Error("Invalid username/password");
-    } 
+    }
 
     return user;
   }

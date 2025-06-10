@@ -40,17 +40,21 @@ const postTypeDefs = `#graphql
 
 const postResolvers = {
   Query: {
-    getPosts: async () => {
-      return await PostModel.getPosts();
+    getPosts: async (parent, args, { auth }) => {
+      await auth();
+      const posts = await PostModel.getPosts();
+      return posts;
     },
 
-    getPostById: async (_, { id }) => {
+    getPostById: async (_, { id }, { auth }) => {
+      await auth();
       return await PostModel.getPostById(id);
     },
   },
 
   Mutation: {
-    addPost: async (_, { content, tag, imgUrl, authorId }) => {
+    addPost: async (_, { content, tag, imgUrl, authorId }, { auth }) => {
+      await auth();
       const newPost = {
         content,
         tag,
@@ -65,7 +69,8 @@ const postResolvers = {
       return { _id: result.insertedId, ...newPost };
     },
 
-    addComment: async (_, { postId, content, username }) => {
+    addComment: async (_, { postId, content, username }, { auth }) => {
+      await auth();
       const newComment = {
         content,
         username,
@@ -76,7 +81,8 @@ const postResolvers = {
       return "Comment added successfully";
     },
 
-    addLike: async (_, { postId, username }) => {
+    addLike: async (_, { postId, username }, { auth }) => {
+      await auth();
       const newLike = {
         username,
         createdAt: new Date(),
