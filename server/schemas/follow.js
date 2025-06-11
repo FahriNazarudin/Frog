@@ -15,51 +15,65 @@ const followTypeDefs = `#graphql
         username: String
         email: String
         createdAt: String
+        isFollowing: Boolean
     }
 
-    extend type Query {
-        getFollowers(userId: ID!): [FollowUser]
-        getFollowing(userId: ID!): [FollowUser]
-        isFollowing(followerId: ID!, followingId: ID!): Boolean
+    type Query {
+        getMyFollowers: [FollowUser]
+        getMyFollowing: [FollowUser]
+        isFollowing(userId: ID!): Boolean
+        getAllUsers: [FollowUser]
     }
 
-    extend type Mutation {
-        followUser(followerId: ID!, followingId: ID!): String
-        unfollowUser(followerId: ID!, followingId: ID!): String
+    type Mutation {
+        followUser(userId: ID!): String
+        unfollowUser(userId: ID!): String
     }
 `;
 
 const followResolvers = {
   Query: {
-    getFollowers: async (_, { userId }, { auth }) => {
-      await auth(); 
-      return await FollowModel.getFollowers(userId);
+    getMyFollowers: async (_, __, { auth }) => {
+      const user = await auth();
+      return await FollowModel.getFollowers(user._id);
     },
 
-    getFollowing: async (_, { userId }, { auth }) => {
-      await auth(); 
-      return await FollowModel.getFollowing(userId);
+    getMyFollowing: async (_, __, { auth }) => {
+      const user = await auth();
+      return await FollowModel.getFollowing(user._id);
     },
 
-    isFollowing: async (_, { followerId, followingId }, { auth }) => {
-      await auth(); 
-      return await FollowModel.isFollowing(followerId, followingId);
+    isFollowing: async (_, { userId }, { auth }) => {
+      const user = await auth();
+      return await FollowModel.isFollowing(user._id, userId);
+    },
+
+    getAllUsers: async (_, __, { auth }) => {
+      const user = await auth();
+      return await FollowModel.getAllUsers(user._id);
     },
   },
 
   Mutation: {
-    followUser: async (_, { followerId, followingId }, { auth }) => {
-      await auth(); 
-      await FollowModel.followUser(followerId, followingId);
+    followUser: async (_, { userId }, { auth }) => {
+      const user = await auth();
+
+      if (user._id.toString() === userId) {
+        throw new Error("Cannot follow yourself");
+      }
+
+      await FollowModel.followUser(user._id, userId);
       return "Successfully followed user";
     },
 
-    unfollowUser: async (_, { followerId, followingId }, { auth }) => {
-      await auth(); 
-      const result = await FollowModel.unfollowUser(followerId, followingId);
+    unfollowUser: async (_, { userId }, { auth }) => {
+      const user = await auth();
+
+      const result = await FollowModel.unfollowUser(user._id, userId);
       if (result.deletedCount === 0) {
-        throw new Error("Follow relationship not found");
+        throw new Error("You are not following this user");
       }
+
       return "Successfully unfollowed user";
     },
   },

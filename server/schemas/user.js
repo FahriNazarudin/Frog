@@ -1,32 +1,43 @@
 const { comparePassword } = require("../helpers/bcrypt");
 const { signToken } = require("../helpers/jwt");
 const { UserModel } = require("../models/UserModel");
+const { FollowModel } = require("../models/FollowModel");
 
 const userTypeDefs = `#graphql
     type User {
-        _id: ID,
-        name: String,
-        username: String,
-        email: String,
-        password: String,
+        _id: ID
+        name: String
+        username: String
+        email: String
+        followers: [FollowUser]
+        following: [FollowUser]
     }
   
+    type FollowUser {
+        _id: ID
+        name: String
+        username: String
+        email: String
+        createdAt: String
+        isFollowing: Boolean
+    }
+
     type Query {
-      getUsers: [User]
-      getUserById(id: ID): User
-      getUserByUsername(username: String): [User]
-      
+        getUsers: [User]
+        getUserById(id: ID): User
+        getUserByUsername(username: String): [User]
+        getUserProfile(id: ID): User
     }
 
     type LoginResponse {
-      accessToken: String
+        accessToken: String
     }
 
     type Mutation {
-      register(name : String, username: String, email : String, password: String) : String
-      login(username: String, password: String): LoginResponse
+        register(name: String, username: String, email: String, password: String): String
+        login(username: String, password: String): LoginResponse
     }   
-  `;
+`;
 
 const userResolvers = {
   Query: {
@@ -34,6 +45,7 @@ const userResolvers = {
       await auth();
       return await UserModel.getUsers();
     },
+
     getUserById: async (_, { id }, { auth }) => {
       await auth();
       const foundUser = await UserModel.getUserById(id);
@@ -44,6 +56,26 @@ const userResolvers = {
       await auth();
       const foundUser = await UserModel.getUserByUsername(username);
       return foundUser;
+    },
+
+    getUserProfile: async (_, { id }, { auth }) => {
+      const user = await auth();
+      const targetUserId = id || user._id;
+      const foundUser = await UserModel.getUserById(targetUserId);
+      return foundUser;
+    },
+  },
+
+  // Field resolvers untuk User type
+  User: {
+    followers: async (parent, _, { auth }) => {
+      await auth();
+      return await FollowModel.getFollowers(parent._id);
+    },
+
+    following: async (parent, _, { auth }) => {
+      await auth();
+      return await FollowModel.getFollowing(parent._id);
     },
   },
 
@@ -64,6 +96,7 @@ const userResolvers = {
     },
   },
 };
+
 module.exports = {
   userTypeDefs,
   userResolvers,

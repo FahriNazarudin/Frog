@@ -13,7 +13,7 @@ class FollowModel {
     if (!followingId) {
       throw new Error("Following ID is required");
     }
-    if (followerId === followingId) {
+    if (followerId.toString() === followingId.toString()) {
       throw new Error("Cannot follow yourself");
     }
 
@@ -66,20 +66,24 @@ class FollowModel {
             from: "users",
             localField: "followerId",
             foreignField: "_id",
-            as: "follower",
+            as: "followerUser",
           },
         },
         {
-          $unwind: "$follower",
+          $unwind: "$followerUser",
         },
         {
           $project: {
-            _id: "$follower._id",
-            name: "$follower.name",
-            username: "$follower.username",
-            email: "$follower.email",
+            _id: "$followerUser._id",
+            name: "$followerUser.name",
+            username: "$followerUser.username",
+            email: "$followerUser.email",
             createdAt: "$createdAt",
+            isFollowing: { $literal: true },
           },
+        },
+        {
+          $sort: { createdAt: -1 },
         },
       ])
       .toArray();
@@ -100,31 +104,61 @@ class FollowModel {
             from: "users",
             localField: "followingId",
             foreignField: "_id",
-            as: "following",
+            as: "followingUser",
           },
         },
         {
-          $unwind: "$following",
+          $unwind: "$followingUser",
         },
         {
           $project: {
-            _id: "$following._id",
-            name: "$following.name",
-            username: "$following.username",
-            email: "$following.email",
+            _id: "$followingUser._id",
+            name: "$followingUser.name",
+            username: "$followingUser.username",
+            email: "$followingUser.email",
             createdAt: "$createdAt",
+            isFollowing: { $literal: true },
           },
+        },
+        {
+          $sort: { createdAt: -1 },
         },
       ])
       .toArray();
   }
 
   static async isFollowing(followerId, followingId) {
+    if (!followerId || !followingId) {
+      return false;
+    }
+
     const follow = await this.collection().findOne({
       followerId: new ObjectId(followerId),
       followingId: new ObjectId(followingId),
     });
     return !!follow;
+  }
+
+  static async getAllUsers(currentUserId) {
+    // Method untuk mendapatkan semua user dengan status isFollowing
+    const allUsers = await database
+      .collection("users")
+      .find({ _id: { $ne: new ObjectId(currentUserId) } })
+      .project({ password: 0 })
+      .toArray();
+
+    // Check status following untuk setiap user
+    const usersWithFollowStatus = await Promise.all(
+      allUsers.map(async (user) => {
+        const isFollowing = await this.isFollowing(currentUserId, user._id);
+        return {
+          ...user,
+          isFollowing,
+        };
+      })
+    );
+
+    return usersWithFollowStatus;
   }
 }
 
