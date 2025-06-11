@@ -60,21 +60,29 @@ const userResolvers = {
 
     getUserProfile: async (_, { id }, { auth }) => {
       const user = await auth();
-      const targetUserId = id || user._id;
-      const foundUser = await UserModel.getUserById(targetUserId);
+      const foundUser = await UserModel.getUserProfile(user._id);
       return foundUser;
     },
   },
 
-  // Field resolvers untuk User type
   User: {
     followers: async (parent, _, { auth }) => {
       await auth();
+
+      if (parent.followers && Array.isArray(parent.followers)) {
+        return parent.followers;
+      }
+
       return await FollowModel.getFollowers(parent._id);
     },
 
     following: async (parent, _, { auth }) => {
       await auth();
+
+      if (parent.following && Array.isArray(parent.following)) {
+        return parent.following;
+      }
+
       return await FollowModel.getFollowing(parent._id);
     },
   },

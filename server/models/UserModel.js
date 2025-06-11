@@ -23,6 +23,115 @@ class UserModel {
     return user;
   }
 
+  static async getUserProfile(id) {
+    if (!id) {
+      throw new Error("User ID is required");
+    }
+
+    const agg = [
+      {
+        $match: { _id: new ObjectId(id) },
+      },
+      {
+        $lookup: {
+          from: "follows",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$followingId", "$$userId"] },
+              },
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "followerId",
+                foreignField: "_id",
+                as: "followerUser",
+              },
+            },
+            {
+              $unwind: {
+                path: "$followerUser",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+            {
+              $project: {
+                _id: "$followerUser._id",
+                name: "$followerUser.name",
+                username: "$followerUser.username",
+                email: "$followerUser.email",
+                createdAt: "$createdAt",
+                isFollowing: { $literal: true },
+              },
+            },
+          ],
+          as: "followersData",
+        },
+      },
+      {
+        $lookup: {
+          from: "follows",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$followerId", "$$userId"] },
+              },
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "followingId",
+                foreignField: "_id",
+                as: "followingUser",
+              },
+            },
+            {
+              $unwind: {
+                path: "$followingUser",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+            {
+              $project: {
+                _id: "$followingUser._id",
+                name: "$followingUser.name",
+                username: "$followingUser.username",
+                email: "$followingUser.email",
+                createdAt: "$createdAt",
+                isFollowing: { $literal: true },
+              },
+            },
+          ],
+          as: "followingData",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          username: 1,
+          email: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          followers: "$followersData",
+          following: "$followingData",
+        },
+      },
+    ];
+
+    const users = await this.collection().aggregate(agg).toArray();
+    console.log("User Profile with Relations:", users);
+
+    if (!users || users.length === 0) {
+      throw new Error("User not found");
+    }
+
+    return users[0];
+  }
+
   static async getUserByUsername(username = "") {
     const users = await this.collection()
       .find({
