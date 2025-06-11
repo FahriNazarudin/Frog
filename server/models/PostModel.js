@@ -38,7 +38,7 @@ class PostModel {
         },
       },
     ];
-    const post =  await this.collection()
+    const post = await this.collection()
       // .find({
       //   content: {
       //     $regex: content,
@@ -47,13 +47,42 @@ class PostModel {
       // })
       .aggregate(agg)
       .toArray();
-      console.log(post);
-      
-      return post
+    console.log(post);
+
+    return post;
   }
 
   static async getPostById(id) {
-    return await this.collection().findOne({ _id: new ObjectId(id) });
+    const agg = [
+      {
+        $match: {
+          _id: new ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "authorDetail",
+        },
+      },
+      {
+        $unwind: {
+          path: "$authorDetail",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          "authorDetail.password": false,
+          "authorDetail.createdAt": false,
+          "authorDetail.updatedAt": false,
+        },
+      },
+    ];
+    const post = await this.collection().aggregate(agg).toArray();
+    return post[0]
   }
 
   static async addPost(newPost) {
