@@ -1,3 +1,4 @@
+const redis = require("../config/redis");
 const { PostModel } = require("../models/PostModel");
 
 const postTypeDefs = `#graphql
@@ -49,7 +50,14 @@ const postResolvers = {
   Query: {
     getPosts: async (parent, args, { auth }) => {
       await auth();
+
+      const postsCache = await redis.get("posts:all");
+      if (postsCache) {
+        return JSON.parse(postsCache);
+      }
+
       const posts = await PostModel.getPosts();
+      await redis.set("posts:all", JSON.stringify(posts), "EX", 3600)
       return posts;
     },
 
@@ -79,6 +87,7 @@ const postResolvers = {
         updatedAt: new Date(),
       };
       await PostModel.addPost(newPost);
+      await redis.del("posts:all"); 
       return newPost;
     },
 
@@ -91,6 +100,7 @@ const postResolvers = {
         updatedAt: new Date(),
       };
       await PostModel.addComment(postId, newComment);
+      await redis.del("posts:all");
       return "Comment added successfully";
     },
 
