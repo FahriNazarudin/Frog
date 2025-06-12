@@ -18,7 +18,7 @@ export default function StackNav() {
         component={Login}
         options={{ headerShown: false }}
       /> */}
-      <Stack.Screen name="Home" component={TabNav} />
+      <Stack.Screen name="Home" component={TabNav} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
