@@ -1,6 +1,7 @@
-import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
+import { View, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import CardPost from "../components/CardPost";
-import { AntDesign, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 const posts = [
   {
@@ -38,6 +39,8 @@ const posts = [
 ];
 
 export default function Home() {
+
+  const navigation = useNavigation();
   return (
     <SafeAreaView >
       <FlatList 
@@ -61,6 +64,7 @@ export default function Home() {
           }}
           onPress={() => {
             console.log("create post button pressed");
+            navigation.push("Create");
           }}
         >
           <Ionicons name="add-circle" size={45} color="#06C755" />

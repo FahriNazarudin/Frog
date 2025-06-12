@@ -4,6 +4,7 @@ import Register from "../screens/Register";
 import TabNav from "./TabNav";
 import { AuthContext } from "../contexts/AuthContext";
 import { useContext } from "react";
+import Create from "../screens/Create";
 
 export default function StackNav() {
   const Stack = createNativeStackNavigator();
@@ -16,6 +17,11 @@ export default function StackNav() {
             name="Home"
             component={TabNav}
             options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Create"
+            component={Create}
+            options={{ headerShown: true }}
           />
         </>
       ) : (
