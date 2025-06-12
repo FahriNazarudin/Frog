@@ -1,3 +1,4 @@
+import { useNavigation } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -9,6 +10,8 @@ import {
 } from "react-native";
 
 export default function Register() {
+
+  const navigation = useNavigation();
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -31,7 +34,6 @@ export default function Register() {
           </Text>
         </View>
         <View style={styles.form}>
-
           <View style={styles.inputGroup}>
             <Text style={styles.label}> Name</Text>
             <TextInput
@@ -41,7 +43,6 @@ export default function Register() {
             />
           </View>
 
-
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Username</Text>
             <TextInput
@@ -50,7 +51,6 @@ export default function Register() {
               placeholderTextColor="#9CA3AF"
             />
           </View>
-
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
@@ -85,7 +85,12 @@ export default function Register() {
             }}
           >
             already have an account?{" "}
-            <Text style={{ color: "#06C755" }}>Login</Text>
+            <Text
+              style={{ color: "#06C755" }}
+              onPress={() => navigation.push("Login")}
+            >
+              Login
+            </Text>
           </Text>
         </View>
       </ScrollView>
