@@ -1,9 +1,9 @@
 import { View, Text } from "react-native";
 
-export default function PostDetail() {
+export default function Detail() {
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Post Detail Screen</Text>
+      <Text> Detail Screen</Text>
     </View>
   );
 }
