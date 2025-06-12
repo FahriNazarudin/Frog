@@ -1,5 +1,6 @@
-import { View, Text, SafeAreaView, FlatList } from "react-native";
+import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import CardPost from "../components/CardPost";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 
 const posts = [
   {
@@ -38,12 +39,33 @@ const posts = [
 
 export default function Home() {
   return (
-    <SafeAreaView>
-      <FlatList
+    <SafeAreaView >
+      <FlatList 
         data={posts}
-        renderItem={({item}) => <CardPost post={item} />}
+        renderItem={({ item }) => <CardPost post={item} />}
         keyExtractor={(post) => post.id}
+       
       />
+      <View
+        style={{
+          position: "absolute",
+          bottom: 20,
+          right: 20,
+          zIndex: 1000,
+        }}
+      >
+        <TouchableOpacity
+          style={{
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onPress={() => {
+            console.log("create post button pressed");
+          }}
+        >
+          <Ionicons name="add-circle" size={45} color="#06C755" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }

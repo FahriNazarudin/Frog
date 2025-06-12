@@ -1,16 +1,52 @@
 import { useNavigation } from "@react-navigation/native";
+import { useContext, useState } from "react";
 import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   StatusBar,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
+import { AuthContext } from "../contexts/AuthContext";
+import { gql, useMutation } from "@apollo/client";
+import { saveSecure } from "../helpers/secureStore";
 
+const LOGIN = gql`
+  mutation Login($username: String, $password: String) {
+    login(username: $username, password: $password) {
+      accessToken
+    }
+  }
+`;
 export default function Login() {
+  const { setIsSignedIn } = useContext(AuthContext); 
   const navigation = useNavigation();
+  const [ username, setUsername ] = useState("");
+  const [ password, setPassword ] = useState("");
+  const [doLogin, { loading}] = useMutation(LOGIN)
+
+  const handleLogin = async () => {
+
+    try {
+      const result = await doLogin({
+        variables: {
+          username: username,
+          password: password,
+        },
+      });
+      const token = result.data.login.accessToken;      
+      await saveSecure("token", token);
+      setIsSignedIn(true); 
+    } catch (error) {
+      console.log("Login error:", error); 
+      Alert.alert("Login Error", error.message);
+    }
+  };
+  
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -30,24 +66,16 @@ export default function Login() {
             🐸
           </Text>
         </View>
-        <View style={styles.form}>
-        
 
+        <View style={styles.form}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Username</Text>
             <TextInput
               style={styles.input}
               placeholder="Snakamoto"
               placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="satoshinakamoto@mail.com"
-              placeholderTextColor="#9CA3AF"
+              value={username}
+              onChangeText={setUsername}
             />
           </View>
 
@@ -58,13 +86,23 @@ export default function Login() {
               placeholder="R3eh8sdi"
               placeholderTextColor="#9CA3AF"
               secureTextEntry
+              value={password}
+              onChangeText={setPassword}
             />
           </View>
 
-          <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8}>
-            <Text style={styles.primaryButtonText}>Login</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            activeOpacity={0.8}
+            disabled={loading}
+            onPress={handleLogin}
+          >
+            <Text style={styles.primaryButtonText}>
+              {loading ? "loading..." : "Login"}
+            </Text>
           </TouchableOpacity>
         </View>
+
         <View style={{ alignItems: "center" }}>
           <Text
             style={{
@@ -74,7 +112,7 @@ export default function Login() {
               textAlign: "center",
             }}
           >
-            already have an account?{" "}
+            Don't have an account?{" "}
             <Text
               style={{ color: "#06C755" }}
               onPress={() => navigation.push("Register")}
@@ -99,12 +137,13 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 40,
   },
-
   header: {
     alignItems: "center",
     marginBottom: 40,
   },
-
+  form: {
+    marginBottom: 30,
+  },
   inputGroup: {
     marginBottom: 20,
   },
@@ -117,7 +156,9 @@ const styles = StyleSheet.create({
   input: {
     height: 50,
     borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
     color: "#111827",
+    fontSize: 16,
   },
   primaryButton: {
     height: 52,
@@ -125,7 +166,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 20,
   },
   primaryButtonText: {
     fontSize: 15,

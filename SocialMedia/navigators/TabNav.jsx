@@ -14,14 +14,19 @@ export default function TabNav() {
           let iconName;
 
           if (route.name === "Home") {
-            iconName = "home-outline";
+            iconName = "home";
           } else if (route.name === "Search") {
-            iconName = "search-outline";
+            iconName = "search";
           } else if (route.name === "Profile") {
-            iconName = "person-outline";
+            iconName = "person";
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: "black", 
+        tabBarInactiveTintColor: "#cecece", 
+        tabBarStyle: {
+          backgroundColor: "#FFFFFF", 
         },
       })}
     >

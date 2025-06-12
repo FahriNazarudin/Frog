@@ -1,5 +1,5 @@
 import { AntDesign } from "@expo/vector-icons";
-import React from "react";
+import React, { useContext } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
   StatusBar,
   SafeAreaView,
 } from "react-native";
+import { AuthContext } from "../contexts/AuthContext";
 
 export default function Profile() {
+  const {setIsSignedIn} = useContext(AuthContext)
   const userData = {
     name: "Fahri Nazarudin",
     username: "@fahrinzrdn",
@@ -37,7 +39,7 @@ export default function Profile() {
         style={{ flex: 1, width: "100%", height: "100%" }}
         imageStyle={{ opacity: 0.8 }}
       >
-        {/* Overlay */}
+
         <View
           style={{
             position: "absolute",
@@ -61,6 +63,10 @@ export default function Profile() {
               justifyContent: "center",
               alignItems: "center",
             }}
+            onPress={() => {
+              console.log("Logout pressed");
+              setIsSignedIn(false);
+            }}
           >
             <AntDesign name="logout" size={24} color="white" />
           </TouchableOpacity>
@@ -75,7 +81,7 @@ export default function Profile() {
             paddingTop: 50,
           }}
         >
-          {/* Profile Picture */}
+
           <View style={{ marginBottom: 20 }}>
             <Image
               source={{
