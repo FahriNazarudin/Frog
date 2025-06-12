@@ -24,13 +24,11 @@ export default function Register() {
           <Text
             style={{
               color: "#06C755",
-              fontSize: 40,
-              fontFamily: "System",
-              fontWeight: "700",
-              marginTop: 90,
+              marginTop: 70,
+              fontSize: 90,
             }}
           >
-            REGISTER
+            🐸
           </Text>
         </View>
         <View style={styles.form}>
