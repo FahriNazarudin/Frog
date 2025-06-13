@@ -59,7 +59,7 @@ export default function Profile() {
     error: profileError,
     refetch: refetchProfile,
   } = useQuery(GET_USER_PROFILE, {
-    fetchPolicy: "cache-and-network", // Changed from network-only
+    fetchPolicy: "network-only", // Changed from network-only
   });
 
   const {

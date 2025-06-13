@@ -49,11 +49,6 @@ export default function Create() {
   const [createPost, { loading }] = useMutation(CREATE_POST, {
     refetchQueries: ["GetPosts"],
     onCompleted: (data) => {
-      console.log("✅ Post created successfully:", data);
-      setContent("");
-      setTag("");
-      setImgUrl("");
-
       Alert.alert("Success", "Post created successfully!", [
         {
           text: "OK",
@@ -64,7 +59,6 @@ export default function Create() {
       ]);
     },
     onError: (error) => {
-      console.log("❌ Create post error:", error);
       Alert.alert(
         "Error",
         error.message || "Failed to create post. Please try again."

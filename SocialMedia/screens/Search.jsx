@@ -53,7 +53,7 @@ export default function Search() {
   const [isSearchActive, setIsSearchActive] = useState(false);
 
   const { data, loading, error, refetch } = useQuery(GET_ALL_USERS, {
-    errorPolicy: "all",
+    fetchPolicy: "network-only",
     notifyOnNetworkStatusChange: true,
   });
 
@@ -61,7 +61,7 @@ export default function Search() {
     GET_USER_BY_USERNAME,
     {
       errorPolicy: "ignore",
-      fetchPolicy: "cache-first",
+      fetchPolicy: "network-only",
     }
   );
 
