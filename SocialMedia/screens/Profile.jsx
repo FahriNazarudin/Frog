@@ -17,10 +17,8 @@ export default function Profile() {
   const userData = {
     name: "Fahri Nazarudin",
     username: "@fahrinzrdn",
-    email: "fahri@example.com",
     followers: 24,
     following: 98,
-    bio: "Sunshine so bright ✨",
   };
 
   return (
@@ -163,42 +161,7 @@ export default function Profile() {
               paddingTop: 20,
             }}
           >
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                alignItems: "center",
-                paddingVertical: 12,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "600",
-                  color: "#FFFFFF",
-                  letterSpacing: 1,
-                }}
-              >
-                POST
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                alignItems: "center",
-                paddingVertical: 12,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "600",
-                  color: "#FFFFFF",
-                  letterSpacing: 1,
-                }}
-              >
-                MEDIA
-              </Text>
-            </TouchableOpacity>
+          
           </View>
         </View>
       </ImageBackground>
