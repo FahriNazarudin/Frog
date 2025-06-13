@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -26,9 +26,12 @@ const GET_ALL_USERS = gql`
 `;
 
 const GET_USER_BY_USERNAME = gql`
-  query GetAllUsers($username: String) {
+  query GetUserByUsername($username: String) {
     getUserByUsername(username: $username) {
+      _id
+      name
       username
+      isFollowing
     }
   }
 `;
@@ -47,48 +50,25 @@ const UNFOLLOW_USER = gql`
 
 export default function Search() {
   const [searchText, setSearchText] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
   const { data, loading, error, refetch } = useQuery(GET_ALL_USERS, {
-    onCompleted: (data) => {
-      console.log("Users data loaded:", data?.getAllUsers?.length, "users");
-      setFilteredUsers(data?.getAllUsers || []);
-    },
+    errorPolicy: "all",
+    notifyOnNetworkStatusChange: true,
   });
 
-  const [searchUserByUsername, { data: searchData, loading: searchLoading }] =
-    useLazyQuery(GET_USER_BY_USERNAME, {
-      onCompleted: (searchData) => {
-        console.log("Search result:", searchData?.getUserByUsername);
-        // Jika ada hasil search, filter dari data utama berdasarkan username
-        if (searchData?.getUserByUsername) {
-          const foundUser = data?.getAllUsers?.find(
-            (user) => user.username === searchData.getUserByUsername.username
-          );
-          if (foundUser) {
-            setFilteredUsers([foundUser]);
-          } else {
-            setFilteredUsers([]);
-          }
-        }
-      },
-      onError: (error) => {
-        console.log("Search error:", error);
-        // Jika tidak ditemukan, tetap lakukan filter lokal
-        handleLocalSearch(searchText);
-      },
-    });
-
-  // Set filteredUsers ketika data berubah
-  useEffect(() => {
-    if (data?.getAllUsers) {
-      setFilteredUsers(data.getAllUsers);
+  const [searchUserByUsername, { loading: searchLoading }] = useLazyQuery(
+    GET_USER_BY_USERNAME,
+    {
+      errorPolicy: "ignore",
+      fetchPolicy: "cache-first",
     }
-  }, [data]);
+  );
 
   const [followUser, { loading: followLoading }] = useMutation(FOLLOW_USER, {
     refetchQueries: ["GetUsers", "GetMyFollowing", "GetMyFollowers"],
     awaitRefetchQueries: true,
+    errorPolicy: "all",
   });
 
   const [unfollowUser, { loading: unfollowLoading }] = useMutation(
@@ -96,237 +76,289 @@ export default function Search() {
     {
       refetchQueries: ["GetUsers", "GetMyFollowing", "GetMyFollowers"],
       awaitRefetchQueries: true,
+      errorPolicy: "all",
     }
   );
 
-  const handleLocalSearch = (text) => {
-    const allUsers = data?.getAllUsers || [];
-    if (!text.trim()) {
-      setFilteredUsers(allUsers);
-    } else {
-      const filtered = allUsers.filter(
-        (user) =>
-          (user.name && user.name.toLowerCase().includes(text.toLowerCase())) ||
-          (user.username &&
-            user.username.toLowerCase().includes(text.toLowerCase()))
-      );
-      setFilteredUsers(filtered);
-    }
-  };
+  // Improved search function with fuzzy matching
+  const fuzzySearch = useCallback((text, targetText) => {
+    if (!text || !targetText) return false;
 
-  const handleSearch = (text) => {
-    setSearchText(text);
+    const searchTerm = text.toLowerCase().trim();
+    const target = targetText.toLowerCase();
 
-    if (!text.trim()) {
-      // Jika search kosong, tampilkan semua users
-      setFilteredUsers(data?.getAllUsers || []);
-    } else {
-      // Coba search dengan GraphQL query dulu
-      searchUserByUsername({ variables: { username: text } });
+    // Exact match
+    if (target.includes(searchTerm)) return true;
 
-      // Juga lakukan filter lokal sebagai fallback
-      setTimeout(() => {
-        if (!searchLoading) {
-          handleLocalSearch(text);
+    // Fuzzy match - allow for typos (simple implementation)
+    if (searchTerm.length > 2) {
+      let matches = 0;
+      let searchIndex = 0;
+
+      for (
+        let i = 0;
+        i < target.length && searchIndex < searchTerm.length;
+        i++
+      ) {
+        if (target[i] === searchTerm[searchIndex]) {
+          matches++;
+          searchIndex++;
         }
-      }, 300);
-    }
-  };
-
-  const handleFollowToggle = async (userId, isFollowing) => {
-    try {
-      if (isFollowing) {
-        await unfollowUser({ variables: { userId } });
-      } else {
-        await followUser({ variables: { userId } });
       }
-    } catch (error) {
-      console.log("Follow toggle error:", error);
-    }
-  };
 
-  const renderUserItem = ({ item }) => {
-    return (
-      <View
-        style={{
-          backgroundColor: "#FFFFFF",
-          marginHorizontal: 16,
-          marginVertical: 4,
-          borderRadius: 8,
-          padding: 16,
-          flexDirection: "row",
-          alignItems: "center",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
-          elevation: 2,
-        }}
-      >
-        <Image
-          source={{
-            uri: `https://image.pollinations.ai/prompt/avatar%20${item.name}?width=100&height=100&nologo=true&model=flux`,
-          }}
-          style={{
-            width: 50,
-            height: 50,
-            borderRadius: 25,
-            marginRight: 12,
-            backgroundColor: "#06C755",
-          }}
-        />
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: "600",
-              color: "#262626",
+      // If 80% of characters match in order, consider it a match
+      return matches / searchTerm.length >= 0.8;
+    }
+
+    return false;
+  }, []);
+
+  // Optimized filtered users with memoization
+  const filteredUsers = useMemo(() => {
+    const allUsers = data?.getAllUsers || [];
+
+    if (!searchText.trim()) {
+      return allUsers;
+    }
+
+    const searchTerm = searchText.toLowerCase().trim();
+
+    return allUsers
+      .filter((user) => {
+        const nameMatch = user.name && fuzzySearch(searchTerm, user.name);
+        const usernameMatch =
+          user.username && fuzzySearch(searchTerm, user.username);
+
+        return nameMatch || usernameMatch;
+      })
+      .sort((a, b) => {
+        // Prioritize exact matches
+        const aNameExact = a.name?.toLowerCase().startsWith(searchTerm);
+        const bNameExact = b.name?.toLowerCase().startsWith(searchTerm);
+        const aUsernameExact = a.username?.toLowerCase().startsWith(searchTerm);
+        const bUsernameExact = b.username?.toLowerCase().startsWith(searchTerm);
+
+        if ((aNameExact || aUsernameExact) && !(bNameExact || bUsernameExact))
+          return -1;
+        if (!(aNameExact || aUsernameExact) && (bNameExact || bUsernameExact))
+          return 1;
+
+        return 0;
+      });
+  }, [data?.getAllUsers, searchText, fuzzySearch]);
+
+  // Debounced search with improved logic
+  const debouncedSearch = useCallback(
+    debounce(async (text) => {
+      if (!text.trim()) {
+        setIsSearchActive(false);
+        return;
+      }
+
+      setIsSearchActive(true);
+
+      try {
+        // Try GraphQL search as a supplement, not replacement
+        await searchUserByUsername({
+          variables: { username: text.trim() },
+        });
+      } catch (error) {
+        console.log("GraphQL search failed, using local search:", error);
+      } finally {
+        setIsSearchActive(false);
+      }
+    }, 300),
+    [searchUserByUsername]
+  );
+
+  const handleSearch = useCallback(
+    (text) => {
+      setSearchText(text);
+      debouncedSearch(text);
+    },
+    [debouncedSearch]
+  );
+
+  const handleFollowToggle = useCallback(
+    async (userId, isFollowing) => {
+      try {
+        if (isFollowing) {
+          await unfollowUser({ variables: { userId } });
+        } else {
+          await followUser({ variables: { userId } });
+        }
+      } catch (error) {
+        console.log("Follow toggle error:", error);
+        Alert.alert(
+          "Error",
+          "Failed to update follow status. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
+    },
+    [followUser, unfollowUser]
+  );
+
+  const clearSearch = useCallback(() => {
+    setSearchText("");
+    setIsSearchActive(false);
+  }, []);
+
+  const renderUserItem = useCallback(
+    ({ item }) => {
+      const isLoading = followLoading || unfollowLoading;
+
+      return (
+        <TouchableOpacity style={styles.userItem} activeOpacity={0.7}>
+          <Image
+            source={{
+              uri: `https://image.pollinations.ai/prompt/avatar%20${encodeURIComponent(
+                item.name
+              )}?width=100&height=100&nologo=true&model=flux`,
             }}
-          >
-            {item.name}
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: "#8E8E8E",
+            style={styles.avatar}
+            defaultSource={{
+              uri: "https://via.placeholder.com/50x50/06C755/FFFFFF?text=?",
             }}
-          >
-            @{item.username}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={{
-            backgroundColor: item.isFollowing ? "#E1E8ED" : "#06C755",
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 20,
-            minWidth: 80,
-            alignItems: "center",
-            opacity: followLoading || unfollowLoading ? 0.6 : 1,
-          }}
-          onPress={() => {
-            handleFollowToggle(item._id, item.isFollowing);
-          }}
-          disabled={followLoading || unfollowLoading}
-        >
-          {followLoading || unfollowLoading ? (
-            <ActivityIndicator
-              size="small"
-              color={item.isFollowing ? "#262626" : "#FFFFFF"}
-            />
-          ) : (
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: item.isFollowing ? "#262626" : "#FFFFFF",
-              }}
-            >
-              {item.isFollowing ? "Following" : "Follow"}
+          />
+          <View style={styles.userInfo}>
+            <Text style={styles.userName} numberOfLines={1}>
+              {highlightSearchTerm(item.name, searchText)}
             </Text>
-          )}
+            <Text style={styles.userUsername} numberOfLines={1}>
+              @{highlightSearchTerm(item.username, searchText)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.followButton,
+              {
+                backgroundColor: item.isFollowing ? "#E1E8ED" : "#06C755",
+                opacity: isLoading ? 0.6 : 1,
+              },
+            ]}
+            onPress={() => handleFollowToggle(item._id, item.isFollowing)}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator
+                size="small"
+                color={item.isFollowing ? "#262626" : "#FFFFFF"}
+              />
+            ) : (
+              <Text
+                style={[
+                  styles.followButtonText,
+                  { color: item.isFollowing ? "#262626" : "#FFFFFF" },
+                ]}
+              >
+                {item.isFollowing ? "Following" : "Follow"}
+              </Text>
+            )}
+          </TouchableOpacity>
         </TouchableOpacity>
+      );
+    },
+    [followLoading, unfollowLoading, handleFollowToggle, searchText]
+  );
+
+  const renderEmptyComponent = useCallback(
+    () => (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="people-outline" size={48} color="#8E8E8E" />
+        <Text style={styles.emptyTitle}>
+          {searchText ? "No users found" : "No users available"}
+        </Text>
+        {searchText && (
+          <Text style={styles.emptySubtitle}>
+            Try searching with different keywords
+          </Text>
+        )}
       </View>
+    ),
+    [searchText]
+  );
+
+  const keyExtractor = useCallback((item) => item._id, []);
+
+  if (loading && !data) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Search Users</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#06C755" />
+          <Text style={styles.loadingText}>Loading users...</Text>
+        </View>
+      </SafeAreaView>
     );
-  };
+  }
+
+  if (error && !data) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Search Users</Text>
+        </View>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#FF6B6B" />
+          <Text style={styles.errorTitle}>Error loading users</Text>
+          <Text style={styles.errorMessage}>{error.message}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => refetch()}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View
-        style={{
-          backgroundColor: "#FFFFFF",
-          paddingHorizontal: 20,
-          paddingVertical: 15,
-          borderBottomWidth: 1,
-          borderBottomColor: "#E1E8ED",
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 20,
-            fontWeight: "600",
-            color: "#262626",
-            textAlign: "center",
-          }}
-        >
-          Search Users
-        </Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Search Users</Text>
       </View>
 
-      <View
-        style={{
-          backgroundColor: "#FFFFFF",
-          paddingHorizontal: 20,
-          paddingVertical: 15,
-          borderBottomWidth: 1,
-          borderBottomColor: "#E1E8ED",
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "#F1F3F4",
-            borderRadius: 25,
-            paddingHorizontal: 15,
-            paddingVertical: 10,
-          }}
-        >
-          {searchLoading ? (
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          {searchLoading || isSearchActive ? (
             <ActivityIndicator
               size={20}
               color="#999"
-              style={{ marginRight: 10 }}
+              style={styles.searchIcon}
             />
           ) : (
             <Ionicons
               name="search"
               size={20}
               color="#999"
-              style={{ marginRight: 10 }}
+              style={styles.searchIcon}
             />
           )}
           <TextInput
-            style={{
-              flex: 1,
-              fontSize: 16,
-              color: "#262626",
-            }}
+            style={styles.searchInput}
             placeholder="Search users by name or username..."
             placeholderTextColor="#999"
             autoCapitalize="none"
+            autoCorrect={false}
             value={searchText}
             onChangeText={handleSearch}
+            returnKeyType="search"
           />
           {searchText.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setSearchText("");
-                setFilteredUsers(data?.getAllUsers || []);
-              }}
-            >
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
               <Ionicons name="close-circle" size={20} color="#999" />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Search Status */}
-      {searchText && !searchLoading && (
-        <View
-          style={{
-            backgroundColor: "#F8F9FA",
-            paddingHorizontal: 20,
-            paddingVertical: 8,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              color: "#8E8E8E",
-              textAlign: "center",
-            }}
-          >
+      {searchText && !searchLoading && !isSearchActive && (
+        <View style={styles.searchStatus}>
+          <Text style={styles.searchStatusText}>
             {filteredUsers.length > 0
               ? `Found ${filteredUsers.length} user${
                   filteredUsers.length !== 1 ? "s" : ""
@@ -336,115 +368,204 @@ export default function Search() {
         </View>
       )}
 
-      {/* Content */}
-      {loading ? (
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <ActivityIndicator size="large" color="#06C755" />
-          <Text style={{ marginTop: 10, color: "#8E8E8E" }}>
-            Loading users...
-          </Text>
-        </View>
-      ) : error ? (
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 20,
-          }}
-        >
-          <Ionicons name="alert-circle-outline" size={48} color="#FF6B6B" />
-          <Text
-            style={{
-              color: "#FF6B6B",
-              fontSize: 16,
-              textAlign: "center",
-              marginTop: 10,
-              marginBottom: 10,
-            }}
-          >
-            Error loading users
-          </Text>
-          <Text
-            style={{
-              color: "#8E8E8E",
-              fontSize: 14,
-              textAlign: "center",
-              marginBottom: 20,
-            }}
-          >
-            {error.message}
-          </Text>
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#06C755",
-              paddingHorizontal: 20,
-              paddingVertical: 10,
-              borderRadius: 8,
-            }}
-            onPress={() => refetch()}
-          >
-            <Text style={{ color: "white", fontWeight: "600" }}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredUsers}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item._id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingVertical: 10,
-            paddingBottom: 100,
-          }}
-          ListEmptyComponent={
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                paddingTop: 50,
-                paddingHorizontal: 20,
-              }}
-            >
-              <Ionicons name="people-outline" size={48} color="#8E8E8E" />
-              <Text
-                style={{
-                  fontSize: 16,
-                  color: "#8E8E8E",
-                  textAlign: "center",
-                  marginTop: 10,
-                }}
-              >
-                {searchText ? "No users found" : "No users available"}
-              </Text>
-              {searchText && (
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#CCCCCC",
-                    textAlign: "center",
-                    marginTop: 5,
-                  }}
-                >
-                  Try searching with different keywords
-                </Text>
-              )}
-            </View>
-          }
-          refreshing={loading}
-          onRefresh={() => refetch()}
-        />
-      )}
+      <FlatList
+        data={filteredUsers}
+        renderItem={renderUserItem}
+        keyExtractor={keyExtractor}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={renderEmptyComponent}
+        refreshing={loading}
+        onRefresh={refetch}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        getItemLayout={(data, index) => ({
+          length: 82,
+          offset: 82 * index,
+          index,
+        })}
+      />
     </SafeAreaView>
   );
+}
+
+// Utility functions
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function highlightSearchTerm(text, searchTerm) {
+  if (!searchTerm.trim() || !text) return text;
+  // This is a placeholder - you can implement text highlighting here if needed
+  return text;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
+  },
+  header: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E1E8ED",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#262626",
+    textAlign: "center",
+  },
+  searchContainer: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E1E8ED",
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F3F4",
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#262626",
+  },
+  clearButton: {
+    padding: 5,
+  },
+  searchStatus: {
+    backgroundColor: "#F8F9FA",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  searchStatusText: {
+    fontSize: 14,
+    color: "#8E8E8E",
+    textAlign: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#8E8E8E",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  errorTitle: {
+    color: "#FF6B6B",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  errorMessage: {
+    color: "#8E8E8E",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: "#06C755",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "white",
+    fontWeight: "600",
+  },
+  listContainer: {
+    paddingVertical: 10,
+    paddingBottom: 100,
+  },
+  userItem: {
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    marginVertical: 4,
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+    backgroundColor: "#06C755",
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#262626",
+  },
+  userUsername: {
+    fontSize: 14,
+    color: "#8E8E8E",
+  },
+  followButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  followButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 50,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    color: "#8E8E8E",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#CCCCCC",
+    textAlign: "center",
+    marginTop: 5,
   },
 });
