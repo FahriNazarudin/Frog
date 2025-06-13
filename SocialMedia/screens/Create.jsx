@@ -86,7 +86,7 @@ export default function Create() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Header */}
+
       <View
         style={{
           flexDirection: "row",

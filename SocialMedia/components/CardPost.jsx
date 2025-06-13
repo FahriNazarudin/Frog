@@ -1,10 +1,12 @@
 import { Entypo, Feather, FontAwesome } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { StyleSheet, View, Text, Image, TouchableOpacity } from "react-native";
 
 export default function CardPost({ post }) {
+
+  const navigation = useNavigation();
   return (
     <View style={styles.container}>
-
       <View
         style={{
           flexDirection: "row",
@@ -16,9 +18,7 @@ export default function CardPost({ post }) {
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Image
             source={{
-              uri: `https://image.pollinations.ai/prompt/${
-                post.authorDetail?.name
-              }?width=100&height=100&nologo=true`,
+              uri: `https://image.pollinations.ai/prompt/${post.authorDetail?.name}?width=100&height=100&nologo=true`,
             }}
             style={{
               width: 32,
@@ -54,12 +54,15 @@ export default function CardPost({ post }) {
               color: "#8E8E8E",
               fontWeight: "bold",
             }}
+            onPress={() => {
+              console.log("create post button pressed");
+              navigation.push("Detail", {_id: post._id});
+            }}
           >
             ⋯
           </Text>
         </TouchableOpacity>
       </View>
-
 
       <Text
         style={{
@@ -71,7 +74,6 @@ export default function CardPost({ post }) {
       >
         {post.content}
       </Text>
-
 
       {post.tag && (
         <View
@@ -92,7 +94,6 @@ export default function CardPost({ post }) {
         </View>
       )}
 
-
       {post.imgUrl && (
         <Image
           source={{ uri: post.imgUrl }}
@@ -104,13 +105,13 @@ export default function CardPost({ post }) {
         />
       )}
 
-
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: 8,
+          marginTop: 8,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -125,7 +126,6 @@ export default function CardPost({ post }) {
           </TouchableOpacity>
         </View>
       </View>
-
 
       <View
         style={{
@@ -157,7 +157,6 @@ export default function CardPost({ post }) {
           </Text>
         )}
       </View>
-
 
       {post.comments && post.comments.length > 0 && (
         <View style={{ marginTop: 8 }}>
