@@ -12,10 +12,11 @@ const { verifyToken } = require("./helpers/jwt");
 const server = new ApolloServer({
   typeDefs: [userTypeDefs, postTypeDefs, followTypeDefs],
   resolvers: [userResolvers, postResolvers, followResolvers],
+  introspection: true, // Enable introspection for development
 });
 
 startStandaloneServer(server, {
-  listen: { port: 4000 },
+  listen: { port: process.env.PORT ||  4000 },
   context: async ({ req }) => {
 
     return { 
