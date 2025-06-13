@@ -37,16 +37,13 @@ class PostModel {
           "authorDetail.updatedAt": false,
         },
       },
+      {
+        $addFields: {
+          tag: { $ifNull: ["$tag", []] },
+        },
+      },
     ];
-    const post = await this.collection()
-      // .find({
-      //   content: {
-      //     $regex: content,
-      //     $options: "i",
-      //   },
-      // })
-      .aggregate(agg)
-      .toArray();
+    const post = await this.collection().aggregate(agg).toArray();
     console.log(post);
 
     return post;
@@ -80,9 +77,14 @@ class PostModel {
           "authorDetail.updatedAt": false,
         },
       },
+      {
+        $addFields: {
+          tag: { $ifNull: ["$tag", []] },
+        },
+      },
     ];
     const post = await this.collection().aggregate(agg).toArray();
-    return post[0]
+    return post[0];
   }
 
   static async addPost(newPost) {
@@ -97,6 +99,7 @@ class PostModel {
     newPost.updatedAt = new Date();
     newPost.comments = [];
     newPost.likes = [];
+    newPost.tag = newPost.tag || [];
 
     return await this.collection().insertOne(newPost);
   }
