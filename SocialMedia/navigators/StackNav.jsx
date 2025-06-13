@@ -21,7 +21,7 @@ export default function StackNav() {
           <Stack.Screen
             name="Create"
             component={Create}
-            options={{ headerShown: true }}
+            options={{ headerShown: false }}
           />
         </>
       ) : (

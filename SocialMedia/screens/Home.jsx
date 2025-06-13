@@ -2,51 +2,56 @@ import { View, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import CardPost from "../components/CardPost";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { gql, useQuery } from "@apollo/client";
 
-const posts = [
-  {
-    id: "1",
-    content: "sepatu hitam",
-    tag: "sepatu",
-    imgUrl:
-      "https://www.pedroshoes.co.id/dw/image/v2/BCWJ_PRD/on/demandware.static/-/Sites-pd_id-products/default/dwbb0c0f3e/images/hi-res/2024-L7-PM1-46380087-01-1.jpg?sw=1152&sh=1536",
-    authorId : "fahri"
-  },
-  {
-    id: "2",
-    content: "sepatu putih",
-    tag: "sepatu",
-    imgUrl:
-      "https://www.pedroshoes.co.id/dw/image/v2/BCWJ_PRD/on/demandware.static/-/Sites-pd_id-products/default/dwbb0c0f3e/images/hi-res/2024-L7-PM1-46380087-01-1.jpg?sw=1152&sh=1536",
-    authorId : "fahri"
-  },
-  {
-    id: "3",
-    content: "sepatu merah",
-    tag: "sepatu",
-    imgUrl:
-      "https://www.pedroshoes.co.id/dw/image/v2/BCWJ_PRD/on/demandware.static/-/Sites-pd_id-products/default/dwbb0c0f3e/images/hi-res/2024-L7-PM1-46380087-01-1.jpg?sw=1152&sh=1536",
-    authorId : "fahri"
-  },
-  {
-    id: "4",
-    content: "sepatu biru",
-    tag: "sepatu",
-    imgUrl:
-      "https://www.pedroshoes.co.id/dw/image/v2/BCWJ_PRD/on/demandware.static/-/Sites-pd_id-products/default/dwbb0c0f3e/images/hi-res/2024-L7-PM1-46380087-01-1.jpg?sw=1152&sh=1536",
-    authorId : "fahri"
+const GET_POSTS = gql`
+  query GetPosts {
+    getPosts {
+      _id
+      content
+      tag
+      imgUrl
+      createdAt
+      updatedAt
+      authorDetail {
+        _id
+        name
+        username
+        email
+      }
+      comments {
+        content
+        username
+        createdAt
+        updatedAt
+      }
+      likes {
+        username
+        createdAt
+        updatedAt
+      }
+    }
   }
-];
+`;
 
 export default function Home() {
-
+  const { data, loading, error } = useQuery(GET_POSTS);
   const navigation = useNavigation();
+
+  if (error) {
+    return (
+      <view style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>{error.message}</Text>
+      </view>
+    )
+  }
+
   return (
     <SafeAreaView >
       <FlatList 
-        data={posts}
+        data={data?.getPosts}
         renderItem={({ item }) => <CardPost post={item} />}
-        keyExtractor={(post) => post.id}
+        keyExtractor={(post) => post._id}
        
       />
       <View
