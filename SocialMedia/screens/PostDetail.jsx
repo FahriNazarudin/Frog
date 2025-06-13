@@ -334,20 +334,17 @@ export default function PostDetail({ route }) {
           >
             Post
           </Text>
-          <TouchableOpacity onPress={() => refetch()}>
-          </TouchableOpacity>
+          <TouchableOpacity onPress={() => refetch()}></TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-
           <View
             style={{
               backgroundColor: "#FFFFFF",
               padding: 10,
-              elevation: 2,
+
             }}
           >
-   
             <View
               style={{
                 flexDirection: "row",
@@ -406,7 +403,6 @@ export default function PostDetail({ route }) {
               </Text>
             </View>
 
-
             <Text
               style={{
                 fontSize: 16,
@@ -417,7 +413,6 @@ export default function PostDetail({ route }) {
             >
               {post.content}
             </Text>
-
 
             {post.tag && Array.isArray(post.tag) && post.tag.length > 0 && (
               <View
@@ -447,26 +442,24 @@ export default function PostDetail({ route }) {
               </View>
             )}
 
-       
             {post.imgUrl && (
               <Image
                 source={{ uri: post.imgUrl }}
                 style={{
-                  width: '100%',
-                  height: 250,
+                  width: "100%",
+                  height: 200,
                   marginBottom: 12,
                 }}
                 resizeMode="cover"
               />
             )}
-  
 
             <View
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                paddingTop: 12,
+                padding: 12,
                 borderTopWidth: 1,
                 borderTopColor: "#F1F3F4",
               }}
@@ -508,7 +501,6 @@ export default function PostDetail({ route }) {
               </TouchableOpacity>
             </View>
           </View>
-
 
           <View
             style={{

@@ -3,8 +3,12 @@ import { useNavigation } from "@react-navigation/native";
 import { StyleSheet, View, Text, Image, TouchableOpacity } from "react-native";
 
 export default function CardPost({ post }) {
-
   const navigation = useNavigation();
+
+  const handleNavigateToDetail = () => {
+    navigation.push("Detail", { _id: post._id });
+  };
+
   return (
     <View style={styles.container}>
       <View
@@ -47,16 +51,12 @@ export default function CardPost({ post }) {
             </Text>
           </View>
         </View>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleNavigateToDetail}>
           <Text
             style={{
               fontSize: 18,
               color: "#8E8E8E",
               fontWeight: "bold",
-            }}
-            onPress={() => {
-              console.log("create post button pressed");
-              navigation.push("Detail", {_id: post._id});
             }}
           >
             ⋯
@@ -75,22 +75,28 @@ export default function CardPost({ post }) {
         {post.content}
       </Text>
 
-      {post.tag && (
+      {post.tag && Array.isArray(post.tag) && post.tag.length > 0 && (
         <View
           style={{
             flexDirection: "row",
+            flexWrap: "wrap",
             marginBottom: 12,
           }}
         >
-          <Text
-            style={{
-              fontSize: 14,
-              color: "#06C755",
-              fontWeight: "500",
-            }}
-          >
-            #{post.tag}
-          </Text>
+          {post.tag.map((tag, index) => (
+            <Text
+              key={index}
+              style={{
+                fontSize: 14,
+                color: "#06C755",
+                fontWeight: "500",
+                marginRight: 8,
+                marginBottom: 4,
+              }}
+            >
+              #{tag}
+            </Text>
+          ))}
         </View>
       )}
 
@@ -118,7 +124,10 @@ export default function CardPost({ post }) {
           <TouchableOpacity style={{ marginRight: 16 }}>
             <Feather name="heart" size={21} color="black" />
           </TouchableOpacity>
-          <TouchableOpacity style={{ marginRight: 16 }}>
+          <TouchableOpacity
+            style={{ marginRight: 16 }}
+            onPress={handleNavigateToDetail}
+          >
             <FontAwesome name="commenting-o" size={20} color="black" />
           </TouchableOpacity>
           <TouchableOpacity>
@@ -162,7 +171,7 @@ export default function CardPost({ post }) {
         <View style={{ marginTop: 8 }}>
           {post.comments.slice(0, 2).map((comment, index) => (
             <View
-              key={index}
+              key={`${comment.username}-${comment.createdAt || index}`}
               style={{
                 flexDirection: "row",
                 marginBottom: 4,
@@ -190,7 +199,7 @@ export default function CardPost({ post }) {
             </View>
           ))}
           {post.comments.length > 2 && (
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handleNavigateToDetail}>
               <Text
                 style={{
                   fontSize: 14,
