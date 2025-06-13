@@ -9,14 +9,14 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react"; 
-import CardPost from "../components/CardPost";
+import { useState } from "react";
 
 const DETAIL_POST = gql`
-  query GetPostById($getPostByIdId: ID) {
+  query GetPostById($getPostByIdId: ID!) {
     getPostById(id: $getPostByIdId) {
       _id
       content
@@ -46,22 +46,39 @@ const DETAIL_POST = gql`
 `;
 
 const ADD_COMMENT = gql`
-  mutation AddComment($postId: ID, $content: String, $username: String) {
-    addComment(postId: $postId, content: $content, username: $username)
+  mutation AddComment($postId: ID!, $content: String!, $username: String!) {
+    addComment(postId: $postId, content: $content, username: $username) {
+      _id
+      content
+      username
+      createdAt
+    }
   }
 `;
 
-export default function Detail({ route }) {
+export default function PostDetail({ route }) {
   const navigation = useNavigation();
   const { _id } = route.params;
   const [commentText, setCommentText] = useState("");
-  const [username, setUsername] = useState("fahri"); // Default username
+  const [username, setUsername] = useState("");
 
   const { data, loading, error, refetch } = useQuery(DETAIL_POST, {
     variables: { getPostByIdId: _id },
+    errorPolicy: "all",
   });
 
-  const [addComment, { loading: commentLoading }] = useMutation(ADD_COMMENT);
+  const [addComment, { loading: commentLoading }] = useMutation(ADD_COMMENT, {
+    onCompleted: (data) => {
+      console.log("Comment added successfully:", data);
+      setCommentText("");
+      refetch();
+      Alert.alert("Success", "Comment added successfully!");
+    },
+    onError: (error) => {
+      console.log("Add comment error:", error);
+      Alert.alert("Error", "Failed to add comment. Please try again.");
+    },
+  });
 
   const handleAddComment = async () => {
     if (!commentText.trim()) {
@@ -75,32 +92,15 @@ export default function Detail({ route }) {
     }
 
     try {
-      console.log("Adding comment:", {
-        postId: _id,
-        content: commentText,
-        username,
-      });
-
-      const result = await addComment({
+      await addComment({
         variables: {
           postId: _id,
           content: commentText.trim(),
           username: username.trim(),
         },
       });
-
-      console.log("Comment added successfully:", result);
-
-
-      setCommentText("");
-
-
-      await refetch();
-
-      Alert.alert("Success", "Comment added successfully!");
     } catch (error) {
-      console.log("Add comment error:", error);
-      Alert.alert("Error", "Failed to add comment. Please try again.");
+      // Error handling is done in onError callback
     }
   };
 
@@ -183,6 +183,17 @@ export default function Detail({ route }) {
           }}
         >
           <Text style={{ color: "#FF6B6B" }}>Error: {error.message}</Text>
+          <TouchableOpacity
+            style={{
+              marginTop: 10,
+              padding: 10,
+              backgroundColor: "#06C755",
+              borderRadius: 5,
+            }}
+            onPress={() => refetch()}
+          >
+            <Text style={{ color: "white" }}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -238,7 +249,6 @@ export default function Detail({ route }) {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <SafeAreaView style={{ flex: 1 }}>
-
         <View
           style={{
             flexDirection: "row",
@@ -268,11 +278,176 @@ export default function Detail({ route }) {
           </TouchableOpacity>
         </View>
 
-
         <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-          <CardPost post={post} />
+          {/* Post Detail */}
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              marginHorizontal: 16,
+              marginTop: 16,
+              borderRadius: 8,
+              padding: 16,
+            }}
+          >
+            {/* Author Info */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "#06C755",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: "#FFFFFF",
+                    fontWeight: "600",
+                  }}
+                >
+                  {post.authorDetail?.name?.charAt(0).toUpperCase() || "U"}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "600",
+                    color: "#262626",
+                  }}
+                >
+                  {post.authorDetail?.name || "Unknown User"}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#8E8E8E",
+                  }}
+                >
+                  @{post.authorDetail?.username || "unknown"}
+                </Text>
+              </View>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: "#8E8E8E",
+                }}
+              >
+                {post.createdAt
+                  ? new Date(parseInt(post.createdAt)).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )
+                  : "Just now"}
+              </Text>
+            </View>
 
-          {/* All Comments Section */}
+            {/* Post Content */}
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#262626",
+                lineHeight: 22,
+                marginBottom: 12,
+              }}
+            >
+              {post.content}
+            </Text>
+
+            {/* Tags */}
+            {post.tag && post.tag.length > 0 && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  marginBottom: 12,
+                }}
+              >
+                {post.tag.map((tag, index) => (
+                  <Text
+                    key={index}
+                    style={{
+                      fontSize: 14,
+                      color: "#06C755",
+                      marginRight: 8,
+                      marginBottom: 4,
+                    }}
+                  >
+                    #{tag}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {/* Image */}
+            {post.imgUrl && (
+              <Image
+                source={{ uri: post.imgUrl }}
+                style={{
+                  width: "100%",
+                  height: 200,
+                  borderRadius: 8,
+                  marginBottom: 12,
+                }}
+                resizeMode="cover"
+              />
+            )}
+
+            {/* Post Stats */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingTop: 12,
+                borderTopWidth: 1,
+                borderTopColor: "#F1F3F4",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="heart-outline" size={20} color="#8E8E8E" />
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#8E8E8E",
+                    marginLeft: 4,
+                  }}
+                >
+                  {post.likes?.length || 0}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="chatbubble-outline" size={18} color="#8E8E8E" />
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#8E8E8E",
+                    marginLeft: 4,
+                  }}
+                >
+                  {post.comments?.length || 0}
+                </Text>
+              </View>
+              <Ionicons name="share-outline" size={20} color="#8E8E8E" />
+            </View>
+          </View>
+
+          {/* Comments Section */}
           <View
             style={{
               backgroundColor: "#FFFFFF",
@@ -296,7 +471,7 @@ export default function Detail({ route }) {
             {post.comments && post.comments.length > 0 ? (
               post.comments.map((comment, index) => (
                 <View
-                  key={index}
+                  key={`${comment.username}-${index}`}
                   style={{
                     flexDirection: "row",
                     marginBottom: 12,
@@ -353,15 +528,16 @@ export default function Detail({ route }) {
                         color: "#8E8E8E",
                       }}
                     >
-                      {new Date(parseInt(comment.createdAt)).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      )}
+                      {comment.createdAt
+                        ? new Date(
+                            parseInt(comment.createdAt)
+                          ).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "Just now"}
                     </Text>
                   </View>
                 </View>
@@ -380,10 +556,8 @@ export default function Detail({ route }) {
             )}
           </View>
 
-
           <View style={{ height: 120 }} />
         </ScrollView>
-
 
         <View
           style={{
@@ -394,7 +568,6 @@ export default function Detail({ route }) {
             paddingVertical: 12,
           }}
         >
-          {/* Username Input */}
           <View style={{ marginBottom: 8 }}>
             <TextInput
               style={{
@@ -413,7 +586,6 @@ export default function Detail({ route }) {
               onChangeText={setUsername}
             />
           </View>
-
 
           <View
             style={{
@@ -444,14 +616,17 @@ export default function Detail({ route }) {
             />
             <TouchableOpacity
               style={{
-                backgroundColor: commentText.trim() ? "#06C755" : "#E1E8ED",
+                backgroundColor:
+                  commentText.trim() && username.trim() ? "#06C755" : "#E1E8ED",
                 borderRadius: 20,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
                 opacity: commentLoading ? 0.6 : 1,
               }}
               onPress={handleAddComment}
-              disabled={commentLoading || !commentText.trim()}
+              disabled={
+                commentLoading || !commentText.trim() || !username.trim()
+              }
             >
               {commentLoading ? (
                 <Text
@@ -467,7 +642,11 @@ export default function Detail({ route }) {
                 <Ionicons
                   name="send"
                   size={16}
-                  color={commentText.trim() ? "#FFFFFF" : "#8E8E8E"}
+                  color={
+                    commentText.trim() && username.trim()
+                      ? "#FFFFFF"
+                      : "#8E8E8E"
+                  }
                 />
               )}
             </TouchableOpacity>
