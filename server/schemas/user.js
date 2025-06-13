@@ -46,9 +46,9 @@ const userResolvers = {
       return await UserModel.getUsers();
     },
 
-    getUserById: async (_, { id }, { auth }) => {
+    getUserById: async (_, { _id }, { auth }) => {
       await auth();
-      const foundUser = await UserModel.getUserById(id);
+      const foundUser = await UserModel.getUserById(_id);
       return foundUser;
     },
 

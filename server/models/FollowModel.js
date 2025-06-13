@@ -17,7 +17,7 @@ class FollowModel {
       throw new Error("Cannot follow yourself");
     }
 
-    // Check if already following
+
     const existingFollow = await this.collection().findOne({
       followerId: new ObjectId(followerId),
       followingId: new ObjectId(followingId),
@@ -140,14 +140,14 @@ class FollowModel {
   }
 
   static async getAllUsers(currentUserId) {
-    // Method untuk mendapatkan semua user dengan status isFollowing
+
     const allUsers = await database
       .collection("users")
       .find({ _id: { $ne: new ObjectId(currentUserId) } })
       .project({ password: 0 })
       .toArray();
 
-    // Check status following untuk setiap user
+
     const usersWithFollowStatus = await Promise.all(
       allUsers.map(async (user) => {
         const isFollowing = await this.isFollowing(currentUserId, user._id);
