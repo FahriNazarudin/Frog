@@ -1,5 +1,5 @@
 import { AntDesign } from "@expo/vector-icons";
-import React, { useContext } from "react";
+import React, { useContext, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,8 @@ import {
 } from "react-native";
 import { AuthContext } from "../contexts/AuthContext";
 import { gql, useQuery } from "@apollo/client";
-import { useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 
 const GET_USER_PROFILE = gql`
   query GetUserProfile {
@@ -48,6 +49,7 @@ const GET_MY_FOLLOWING = gql`
 
 export default function Profile() {
   const { setIsSignedIn } = useContext(AuthContext);
+  const navigation = useNavigation();
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
 
@@ -56,19 +58,35 @@ export default function Profile() {
     loading: profileLoading,
     error: profileError,
     refetch: refetchProfile,
-  } = useQuery(GET_USER_PROFILE);
+  } = useQuery(GET_USER_PROFILE, {
+    fetchPolicy: "cache-and-network", // Changed from network-only
+  });
+
   const {
     data: followersData,
     loading: followersLoading,
     error: followersError,
     refetch: refetchFollowers,
-  } = useQuery(GET_MY_FOLLOWERS);
+  } = useQuery(GET_MY_FOLLOWERS, {
+    fetchPolicy: "cache-and-network", // Add fetchPolicy
+  });
+
   const {
     data: followingData,
     loading: followingLoading,
     error: followingError,
     refetch: refetchFollowing,
-  } = useQuery(GET_MY_FOLLOWING);
+  } = useQuery(GET_MY_FOLLOWING, {
+    fetchPolicy: "cache-and-network", // Add fetchPolicy
+  });
+
+  // Add focus effect to refetch data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchFollowers();
+      refetchFollowing();
+    }, [refetchFollowers, refetchFollowing])
+  );
 
   const handleRefresh = () => {
     refetchProfile();
@@ -283,8 +301,7 @@ export default function Profile() {
         />
 
         <View style={styles.header}>
-          <TouchableOpacity>
-          </TouchableOpacity>
+          <TouchableOpacity></TouchableOpacity>
           <TouchableOpacity
             style={{
               width: 40,
@@ -295,7 +312,7 @@ export default function Profile() {
               alignItems: "center",
             }}
             onPress={() => {
-              console.log("Logout pressed");
+              // console.log("Logout pressed");
               setIsSignedIn(false);
             }}
           >
@@ -348,8 +365,6 @@ export default function Profile() {
             >
               @{userData.username}
             </Text>
-          
-
 
             <View
               style={{
@@ -435,9 +450,7 @@ export default function Profile() {
                 )}
               </TouchableOpacity>
             </View>
-
           </View>
-
 
           <View
             style={{

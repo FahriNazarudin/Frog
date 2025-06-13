@@ -87,13 +87,15 @@ export default function Search() {
   }, [data]);
 
   const [followUser, { loading: followLoading }] = useMutation(FOLLOW_USER, {
-    refetchQueries: ["GetUsers"],
+    refetchQueries: ["GetUsers", "GetMyFollowing", "GetMyFollowers"],
+    awaitRefetchQueries: true,
   });
 
   const [unfollowUser, { loading: unfollowLoading }] = useMutation(
     UNFOLLOW_USER,
     {
-      refetchQueries: ["GetUsers"],
+      refetchQueries: ["GetUsers", "GetMyFollowing", "GetMyFollowers"],
+      awaitRefetchQueries: true,
     }
   );
 

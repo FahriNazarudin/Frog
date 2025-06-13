@@ -80,7 +80,9 @@ export default function Home() {
           ...like,
           username: like.username || "anonymous",
         })) || [],
-    })) || [];
+    }))
+    // Sort posts by createdAt in descending order (newest first)
+    ?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
 
   if (loading) {
     return (
@@ -150,22 +152,6 @@ export default function Home() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
-      {/* Show error banner if there's partial data */}
-      {error && data && (
-        <View
-          style={{
-            backgroundColor: "#FFF3CD",
-            paddingHorizontal: 15,
-            paddingVertical: 8,
-            borderBottomWidth: 1,
-            borderBottomColor: "#FFEAA7",
-          }}
-        >
-          <Text style={{ color: "#856404", fontSize: 12, textAlign: "center" }}>
-            Some data may be incomplete. Pull to refresh.
-          </Text>
-        </View>
-      )}
 
       <FlatList
         data={sanitizedPosts}
