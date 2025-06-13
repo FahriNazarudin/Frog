@@ -86,6 +86,7 @@ export default function Register() {
               placeholderTextColor="#9CA3AF"
               value={name}
               onChangeText={setName}
+              autoCapitalize="none"
             />
           </View>
 
@@ -97,6 +98,7 @@ export default function Register() {
               placeholderTextColor="#9CA3AF"
               value={username}
               onChangeText={setUsername}
+              autoCapitalize="none"
             />
           </View>
 
@@ -108,6 +110,7 @@ export default function Register() {
               placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={setEmail}
+              autoCapitalize="none"
             />
           </View>
 
@@ -120,6 +123,7 @@ export default function Register() {
               secureTextEntry
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
             />
           </View>
 

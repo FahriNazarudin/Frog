@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { gql, useQuery, useMutation } from "@apollo/client";
+import { gql, useQuery, useMutation, useLazyQuery } from "@apollo/client";
 
 const GET_ALL_USERS = gql`
   query GetUsers {
@@ -21,6 +21,14 @@ const GET_ALL_USERS = gql`
       name
       username
       isFollowing
+    }
+  }
+`;
+
+const GET_USER_BY_USERNAME = gql`
+  query GetAllUsers($username: String) {
+    getUserByUsername(username: $username) {
+      username
     }
   }
 `;
@@ -48,6 +56,29 @@ export default function Search() {
     },
   });
 
+  const [searchUserByUsername, { data: searchData, loading: searchLoading }] =
+    useLazyQuery(GET_USER_BY_USERNAME, {
+      onCompleted: (searchData) => {
+        console.log("Search result:", searchData?.getUserByUsername);
+        // Jika ada hasil search, filter dari data utama berdasarkan username
+        if (searchData?.getUserByUsername) {
+          const foundUser = data?.getAllUsers?.find(
+            (user) => user.username === searchData.getUserByUsername.username
+          );
+          if (foundUser) {
+            setFilteredUsers([foundUser]);
+          } else {
+            setFilteredUsers([]);
+          }
+        }
+      },
+      onError: (error) => {
+        console.log("Search error:", error);
+        // Jika tidak ditemukan, tetap lakukan filter lokal
+        handleLocalSearch(searchText);
+      },
+    });
+
   // Set filteredUsers ketika data berubah
   useEffect(() => {
     if (data?.getAllUsers) {
@@ -56,30 +87,47 @@ export default function Search() {
   }, [data]);
 
   const [followUser, { loading: followLoading }] = useMutation(FOLLOW_USER, {
-    refetchQueries: ["GetUsers"], 
+    refetchQueries: ["GetUsers"],
   });
 
   const [unfollowUser, { loading: unfollowLoading }] = useMutation(
     UNFOLLOW_USER,
     {
-      refetchQueries: ["GetUsers"], 
-  
+      refetchQueries: ["GetUsers"],
     }
   );
 
-  const handleSearch = (text) => {
-    setSearchText(text);
+  const handleLocalSearch = (text) => {
     const allUsers = data?.getAllUsers || [];
-
     if (!text.trim()) {
       setFilteredUsers(allUsers);
     } else {
       const filtered = allUsers.filter(
         (user) =>
-          user.name.toLowerCase().includes(text.toLowerCase()) ||
-          user.username.toLowerCase().includes(text.toLowerCase())
+          (user.name && user.name.toLowerCase().includes(text.toLowerCase())) ||
+          (user.username &&
+            user.username.toLowerCase().includes(text.toLowerCase()))
       );
       setFilteredUsers(filtered);
+    }
+  };
+
+  const handleSearch = (text) => {
+    setSearchText(text);
+
+    if (!text.trim()) {
+      // Jika search kosong, tampilkan semua users
+      setFilteredUsers(data?.getAllUsers || []);
+    } else {
+      // Coba search dengan GraphQL query dulu
+      searchUserByUsername({ variables: { username: text } });
+
+      // Juga lakukan filter lokal sebagai fallback
+      setTimeout(() => {
+        if (!searchLoading) {
+          handleLocalSearch(text);
+        }
+      }, 300);
     }
   };
 
@@ -203,7 +251,6 @@ export default function Search() {
         </Text>
       </View>
 
-
       <View
         style={{
           backgroundColor: "#FFFFFF",
@@ -223,12 +270,20 @@ export default function Search() {
             paddingVertical: 10,
           }}
         >
-          <Ionicons
-            name="search"
-            size={20}
-            color="#999"
-            style={{ marginRight: 10 }}
-          />
+          {searchLoading ? (
+            <ActivityIndicator
+              size={20}
+              color="#999"
+              style={{ marginRight: 10 }}
+            />
+          ) : (
+            <Ionicons
+              name="search"
+              size={20}
+              color="#999"
+              style={{ marginRight: 10 }}
+            />
+          )}
           <TextInput
             style={{
               flex: 1,
@@ -254,6 +309,30 @@ export default function Search() {
         </View>
       </View>
 
+      {/* Search Status */}
+      {searchText && !searchLoading && (
+        <View
+          style={{
+            backgroundColor: "#F8F9FA",
+            paddingHorizontal: 20,
+            paddingVertical: 8,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              color: "#8E8E8E",
+              textAlign: "center",
+            }}
+          >
+            {filteredUsers.length > 0
+              ? `Found ${filteredUsers.length} user${
+                  filteredUsers.length !== 1 ? "s" : ""
+                } for "${searchText}"`
+              : `No users found for "${searchText}"`}
+          </Text>
+        </View>
+      )}
 
       {/* Content */}
       {loading ? (

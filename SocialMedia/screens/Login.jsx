@@ -76,6 +76,7 @@ export default function Login() {
               placeholderTextColor="#9CA3AF"
               value={username}
               onChangeText={setUsername}
+              autoCapitalize="none"
             />
           </View>
 
@@ -88,6 +89,7 @@ export default function Login() {
               secureTextEntry
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
             />
           </View>
 

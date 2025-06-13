@@ -45,7 +45,9 @@ export default function Create() {
   const [authorId, setAuthorId] = useState(authorId); 
   const navigation = useNavigation();
 
-  const [createPost, { loading }] = useMutation(CREATE_POST);
+  const [createPost, { loading }] = useMutation(CREATE_POST, {
+    refetchQueries: ["GetPosts"],
+  });
 
   const handleCreatePost = async () => {
 
@@ -85,7 +87,6 @@ export default function Create() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-
 
       <View
         style={{
@@ -131,7 +132,6 @@ export default function Create() {
       </View>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-
         <View
           style={{
             backgroundColor: "#FFFFFF",
@@ -209,7 +209,6 @@ export default function Create() {
             onChangeText={setTag}
           />
         </View>
-
 
         <View
           style={{

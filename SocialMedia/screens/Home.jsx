@@ -1,4 +1,11 @@
-import { View, SafeAreaView, FlatList, TouchableOpacity, Text, ActivityIndicator } from "react-native";
+import {
+  View,
+  SafeAreaView,
+  FlatList,
+  TouchableOpacity,
+  Text,
+  ActivityIndicator,
+} from "react-native";
 import CardPost from "../components/CardPost";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -35,30 +42,103 @@ const GET_POSTS = gql`
 `;
 
 export default function Home() {
-  const { data, loading, error, refetch } = useQuery(GET_POSTS);
+  const { data, loading, error, refetch } = useQuery(GET_POSTS, {
+    errorPolicy: "all", // Menampilkan data partial meski ada error
+    onError: (error) => {
+      console.log("GraphQL Error:", error);
+      console.log("Network Error:", error.networkError);
+      console.log("GraphQL Errors:", error.graphQLErrors);
+    },
+    onCompleted: (data) => {
+      console.log("Posts data loaded:", data?.getPosts?.length, "posts");
+    },
+  });
+
   const navigation = useNavigation();
+
+  // Sanitize data untuk menghindari parsing error
+  const sanitizedPosts =
+    data?.getPosts?.map((post) => ({
+      ...post,
+      tag: post.tag || "", // Pastikan tag tidak null
+      imgUrl: post.imgUrl || "", // Pastikan imgUrl tidak null
+      content: post.content || "", // Pastikan content tidak null
+      authorDetail: {
+        ...post.authorDetail,
+        name: post.authorDetail?.name || "Unknown User",
+        username: post.authorDetail?.username || "unknown",
+        email: post.authorDetail?.email || "",
+      },
+      comments:
+        post.comments?.map((comment) => ({
+          ...comment,
+          content: comment.content || "",
+          username: comment.username || "anonymous",
+        })) || [],
+      likes:
+        post.likes?.map((like) => ({
+          ...like,
+          username: like.username || "anonymous",
+        })) || [],
+    })) || [];
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" }}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#F8F9FA",
+        }}
+      >
         <ActivityIndicator size="large" color="#06C755" />
-        <Text style={{ marginTop: 10, color: "#8E8E8E" }}>Loading posts...</Text>
+        <Text style={{ marginTop: 10, color: "#8E8E8E" }}>
+          Loading posts...
+        </Text>
       </SafeAreaView>
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" }}>
-        <Text style={{ color: "#FF6B6B", fontSize: 16, marginBottom: 10 }}>
-          Error: {error.message}
+      <SafeAreaView
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#F8F9FA",
+          paddingHorizontal: 20,
+        }}
+      >
+        <Ionicons name="alert-circle-outline" size={48} color="#FF6B6B" />
+        <Text
+          style={{
+            color: "#FF6B6B",
+            fontSize: 16,
+            marginTop: 10,
+            marginBottom: 5,
+            textAlign: "center",
+          }}
+        >
+          Failed to load posts
         </Text>
-        <TouchableOpacity 
-          style={{ 
-            backgroundColor: "#06C755", 
-            paddingHorizontal: 20, 
-            paddingVertical: 10, 
-            borderRadius: 8 
+        <Text
+          style={{
+            color: "#8E8E8E",
+            fontSize: 14,
+            marginBottom: 20,
+            textAlign: "center",
+          }}
+        >
+          {error.message}
+        </Text>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#06C755",
+            paddingHorizontal: 20,
+            paddingVertical: 10,
+            borderRadius: 8,
           }}
           onPress={() => refetch()}
         >
@@ -70,30 +150,64 @@ export default function Home() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
-      <FlatList 
-        data={data?.getPosts || []}
+      {/* Show error banner if there's partial data */}
+      {error && data && (
+        <View
+          style={{
+            backgroundColor: "#FFF3CD",
+            paddingHorizontal: 15,
+            paddingVertical: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: "#FFEAA7",
+          }}
+        >
+          <Text style={{ color: "#856404", fontSize: 12, textAlign: "center" }}>
+            Some data may be incomplete. Pull to refresh.
+          </Text>
+        </View>
+      )}
+
+      <FlatList
+        data={sanitizedPosts}
         renderItem={({ item }) => <CardPost post={item} />}
         keyExtractor={(post) => post._id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ 
+        contentContainerStyle={{
           paddingBottom: 100,
-          paddingTop: 10 
+          paddingTop: 10,
         }}
         refreshing={loading}
         onRefresh={() => refetch()}
         ListEmptyComponent={
-          <View style={{ 
-            flex: 1, 
-            justifyContent: "center", 
-            alignItems: "center", 
-            paddingTop: 50 
-          }}>
-            <Text style={{ 
-              fontSize: 16, 
-              color: "#8E8E8E", 
-              textAlign: "center" 
-            }}>
-              No posts available.{"\n"}Pull to refresh or create your first post!
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              paddingTop: 50,
+              paddingHorizontal: 20,
+            }}
+          >
+            <Ionicons name="document-text-outline" size={48} color="#8E8E8E" />
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#8E8E8E",
+                textAlign: "center",
+                marginTop: 10,
+              }}
+            >
+              No posts available
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "#CCCCCC",
+                textAlign: "center",
+                marginTop: 5,
+              }}
+            >
+              Pull to refresh or create your first post!
             </Text>
           </View>
         }
