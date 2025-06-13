@@ -10,6 +10,7 @@ import {
   StatusBar,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { gql, useMutation } from "@apollo/client";
 import { useNavigation } from "@react-navigation/native";
@@ -42,19 +43,45 @@ export default function Create() {
   const [content, setContent] = useState("");
   const [tag, setTag] = useState("");
   const [imgUrl, setImgUrl] = useState("");
-  const [authorId, setAuthorId] = useState(authorId); 
+  const [authorId, setAuthorId] = useState(authorId);
   const navigation = useNavigation();
 
   const [createPost, { loading }] = useMutation(CREATE_POST, {
     refetchQueries: ["GetPosts"],
+    onCompleted: (data) => {
+      console.log("✅ Post created successfully:", data);
+      setContent("");
+      setTag("");
+      setImgUrl("");
+
+      Alert.alert("Success", "Post created successfully!", [
+        {
+          text: "OK",
+          onPress: () => {
+            navigation.navigate("Home");
+          },
+        },
+      ]);
+    },
+    onError: (error) => {
+      console.log("❌ Create post error:", error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to create post. Please try again."
+      );
+    },
   });
 
   const handleCreatePost = async () => {
+    if (!content.trim()) {
+      Alert.alert("Error", "Please enter some content for your post.");
+      return;
+    }
 
     try {
       console.log("🚀 Creating post with:", { content, tag, imgUrl, authorId });
 
-      const result = await createPost({
+      await createPost({
         variables: {
           content: content,
           tag: tag,
@@ -62,27 +89,29 @@ export default function Create() {
           authorId: authorId,
         },
       });
-
-      console.log("✅ Post created successfully:", result);
-
-      Alert.alert(result.data.register);
-      Alert.alert("Success", "Post created successfully!", [
-        {
-          text: "OK",
-          onPress: () => {
-            setContent("");
-            setTag("");
-            setImgUrl("");
-
-            navigation.navigate("Home");
-          },
-        },
-      ]);
     } catch (error) {
-      console.log("❌ Create post error:", error);
-      Alert.alert("Error", "Failed to create post. Please try again.");
+      console.log("Create post catch error:", error);
     }
   };
+
+  // Add loading state
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#F8F9FA",
+        }}
+      >
+        <ActivityIndicator size="large" color="#06C755" />
+        <Text style={{ marginTop: 10, color: "#8E8E8E" }}>
+          Creating post...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

@@ -99,13 +99,13 @@ export default function Profile() {
       <SafeAreaView
         style={{
           flex: 1,
-          backgroundColor: "#000000",
+          backgroundColor: "white",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <ActivityIndicator size="large" color="#FFFFFF" />
-        <Text style={{ marginTop: 10, color: "#FFFFFF" }}>
+        <ActivityIndicator size="large" color="#06C755" />
+        <Text style={{ marginTop: 10, color: "#8E8E8E" }}>
           Loading profile...
         </Text>
       </SafeAreaView>
@@ -196,7 +196,7 @@ export default function Profile() {
             fontWeight: "600",
           }}
         >
-          {item.username.charAt(0).toUpperCase()}
+          {item.username ? item.username.charAt(0).toUpperCase() : "?"}
         </Text>
       </View>
       <View style={{ flex: 1 }}>
@@ -207,7 +207,7 @@ export default function Profile() {
             color: "#FFFFFF",
           }}
         >
-          @{item.username}
+          @{item.username || "unknown"}
         </Text>
         <Text
           style={{
@@ -249,7 +249,7 @@ export default function Profile() {
             fontWeight: "600",
           }}
         >
-          {item.username.charAt(0).toUpperCase()}
+          {item.username ? item.username.charAt(0).toUpperCase() : "?"}
         </Text>
       </View>
       <View style={{ flex: 1 }}>
@@ -260,7 +260,7 @@ export default function Profile() {
             color: "#FFFFFF",
           }}
         >
-          @{item.username}
+          @{item.username || "unknown"}
         </Text>
         <Text
           style={{
@@ -312,7 +312,7 @@ export default function Profile() {
               alignItems: "center",
             }}
             onPress={() => {
-              // console.log("Logout pressed");
+              console.log("Logout pressed");
               setIsSignedIn(false);
             }}
           >
