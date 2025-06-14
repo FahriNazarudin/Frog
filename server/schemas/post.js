@@ -93,7 +93,7 @@ const postResolvers = {
       try {
         await auth();
 
-        // Try to get from cache first
+
         const cacheKey = "posts:all";
         const postsCache = await redis.get(cacheKey);
 
@@ -196,7 +196,7 @@ const postResolvers = {
         }
 
         // Use authenticated user's ID if authorId not provided
-        const finalAuthorId = authorId || user._id;
+        const finalAuthorId = user._id;
 
         // Sanitize input data
         const newPost = {

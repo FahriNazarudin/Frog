@@ -31,6 +31,7 @@ const userTypeDefs = `#graphql
 
     type LoginResponse {
         accessToken: String
+        user: User
     }
 
     type Mutation {
@@ -100,7 +101,15 @@ const userResolvers = {
         id: user._id,
         username: user.username,
       });
-      return { accessToken };
+      return {
+        accessToken,
+        user: {
+          _id: user._id,
+          name: user.name,
+          username: user.username,
+          email: user.email,
+        },
+      };
     },
   },
 };
