@@ -11,9 +11,10 @@ const postTypeDefs = `#graphql
         likes: [Like]
         createdAt: String
         updatedAt: String
-        authorDetail: authorDetail
+        authorDetail: AuthorDetail
     }
-    type authorDetail {
+    
+    type AuthorDetail {
         _id: ID
         name: String
         username: String
@@ -33,87 +34,306 @@ const postTypeDefs = `#graphql
         updatedAt: String
     }
 
-     type Query {
+    type Query {
         getPosts: [Post]
-        getPostById(id: ID): Post
-        getPostByContent(content: String): [Post]
+        getPostById(id: ID!): Post
+        getPostByContent(content: String!): [Post]
     }
     
-     type Mutation {
-        addPost(content: String, tag: String, imgUrl: String, authorId: ID): Post
-        addComment(postId: ID, content: String, username: String): String
-        # // perlu hapus username karena sudah ada di auth
-        addLike(postId: ID, username: String): String 
+    type Mutation {
+        addPost(content: String!, tag: String, imgUrl: String, authorId: ID): Post
+        addComment(postId: ID!, content: String!, username: String): String
+        addLike(postId: ID!, username: String): String 
+        removeLike(postId: ID!, username: String): String
     }
 `;
+
+// Utility function untuk sanitize posts
+const sanitizePost = (post) => {
+  if (!post) return null;
+
+  return {
+    ...post,
+    // Fix tag field - convert array to string or null
+    tag: Array.isArray(post.tag)
+      ? post.tag.length > 0
+        ? post.tag[0]
+        : null
+      : post.tag || null,
+
+    // Ensure other fields have proper defaults
+    content: post.content || "",
+    imgUrl: post.imgUrl || "",
+    comments: Array.isArray(post.comments) ? post.comments : [],
+    likes: Array.isArray(post.likes) ? post.likes : [],
+    createdAt: post.createdAt || new Date().toISOString(),
+    updatedAt: post.updatedAt || new Date().toISOString(),
+
+    // Ensure authorDetail is properly formatted
+    authorDetail: post.authorDetail
+      ? {
+          _id: post.authorDetail._id || null,
+          name: post.authorDetail.name || "Unknown User",
+          username: post.authorDetail.username || "unknown",
+          email: post.authorDetail.email || "",
+        }
+      : null,
+  };
+};
+
+// Utility function untuk sanitize multiple posts
+const sanitizePosts = (posts) => {
+  if (!Array.isArray(posts)) return [];
+  return posts.map(sanitizePost).filter(Boolean);
+};
 
 const postResolvers = {
   Query: {
     getPosts: async (parent, args, { auth }) => {
-      await auth();
+      try {
+        await auth();
 
-      const postsCache = await redis.get("posts:all");
-      if (postsCache) {
-        return JSON.parse(postsCache);
+        // Try to get from cache first
+        const cacheKey = "posts:all";
+        const postsCache = await redis.get(cacheKey);
+
+        if (postsCache) {
+          console.log("📦 Retrieved posts from cache");
+          const cachedPosts = JSON.parse(postsCache);
+          return sanitizePosts(cachedPosts);
+        }
+
+        console.log("🔄 Fetching posts from database");
+        const posts = await PostModel.getPosts();
+
+        // Sanitize posts before caching and returning
+        const sanitizedPosts = sanitizePosts(posts);
+
+        // Cache for 1 hour (3600 seconds)
+        if (sanitizedPosts.length > 0) {
+          await redis.setex(cacheKey, 3600, JSON.stringify(sanitizedPosts));
+          console.log("📦 Posts cached successfully");
+        }
+
+        return sanitizedPosts;
+      } catch (error) {
+        console.error("❌ Error in getPosts resolver:", error);
+        throw new Error("Failed to retrieve posts");
       }
-
-      const posts = await PostModel.getPosts();
-      await redis.set("posts:all", JSON.stringify(posts), "EX", 3600)
-      return posts;
     },
 
     getPostById: async (_, { id }, { auth }) => {
-      await auth();
-      return await PostModel.getPostById(id);
+      try {
+        await auth();
+
+        if (!id) {
+          throw new Error("Post ID is required");
+        }
+
+        const cacheKey = `post:${id}`;
+        const postCache = await redis.get(cacheKey);
+
+        if (postCache) {
+          console.log("📦 Retrieved post from cache");
+          const cachedPost = JSON.parse(postCache);
+          return sanitizePost(cachedPost);
+        }
+
+        console.log(`🔄 Fetching post ${id} from database`);
+        const post = await PostModel.getPostById(id);
+
+        if (!post) {
+          throw new Error("Post not found");
+        }
+
+        // Sanitize post before caching and returning
+        const sanitizedPost = sanitizePost(post);
+
+        // Cache for 30 minutes (1800 seconds)
+        await redis.setex(cacheKey, 1800, JSON.stringify(sanitizedPost));
+        console.log(`📦 Post ${id} cached successfully`);
+
+        return sanitizedPost;
+      } catch (error) {
+        console.error("❌ Error in getPostById resolver:", error);
+        throw error;
+      }
     },
 
     getPostByContent: async (_, { content }, { auth }) => {
-      await auth();
-      const posts = await PostModel.getPosts(content);
-      return posts;
+      try {
+        await auth();
+
+        if (!content || content.trim() === "") {
+          throw new Error("Search content is required");
+        }
+
+        console.log(`🔍 Searching posts with content: "${content}"`);
+        const posts = await PostModel.getPosts(content.trim());
+
+        // Sanitize search results
+        const sanitizedPosts = sanitizePosts(posts);
+
+        console.log(
+          `📊 Found ${sanitizedPosts.length} posts matching "${content}"`
+        );
+        return sanitizedPosts;
+      } catch (error) {
+        console.error("❌ Error in getPostByContent resolver:", error);
+        throw new Error("Failed to search posts");
+      }
     },
   },
 
   Mutation: {
-    addPost: async (_, { content, tag, imgUrl }, { auth }) => {
-      const user = await auth();
-      const newPost = {
-        content,
-        tag,
-        imgUrl,
-        authorId: user._id,
-        comments: [],
-        likes: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      await PostModel.addPost(newPost);
-      await redis.del("posts:all"); 
-      return newPost;
+    addPost: async (_, { content, tag, imgUrl, authorId }, { auth }) => {
+      try {
+        const user = await auth();
+
+        // Validation
+        if (!content || content.trim() === "") {
+          throw new Error("Content is required and cannot be empty");
+        }
+
+        // Use authenticated user's ID if authorId not provided
+        const finalAuthorId = authorId || user._id;
+
+        // Sanitize input data
+        const newPost = {
+          content: content.trim(),
+          tag: tag && tag.trim() ? tag.trim() : null, // Ensure tag is string or null
+          imgUrl: imgUrl && imgUrl.trim() ? imgUrl.trim() : "",
+          authorId: finalAuthorId,
+        };
+
+        console.log("🚀 Creating new post:", {
+          content: newPost.content.substring(0, 50) + "...",
+          tag: newPost.tag,
+          authorId: finalAuthorId,
+        });
+
+        const createdPost = await PostModel.addPost(newPost);
+
+        // Sanitize created post
+        const sanitizedPost = sanitizePost(createdPost);
+
+        // Clear cache after successful creation
+        await Promise.all([
+          redis.del("posts:all"),
+          // Also clear any search-related caches if they exist
+          redis.del("posts:search:*"),
+        ]);
+
+        console.log("✅ Post created successfully with ID:", createdPost._id);
+        console.log("🗑️ Cache cleared successfully");
+
+        return sanitizedPost;
+      } catch (error) {
+        console.error("❌ Error in addPost resolver:", error);
+        throw error;
+      }
     },
 
     addComment: async (_, { postId, content }, { auth }) => {
-      const user = await auth();
-      const newComment = {
-        content,
-        username: user.username,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      await PostModel.addComment(postId, newComment);
-      await redis.del("posts:all");
-      return "Comment added successfully";
+      try {
+        const user = await auth();
+
+        // Validation
+        if (!postId) {
+          throw new Error("Post ID is required");
+        }
+        if (!content || content.trim() === "") {
+          throw new Error("Comment content is required and cannot be empty");
+        }
+
+        const newComment = {
+          content: content.trim(),
+          username: user.username,
+        };
+
+        console.log(`💬 Adding comment to post ${postId} by ${user.username}`);
+        await PostModel.addComment(postId, newComment);
+
+        // Clear related caches
+        await Promise.all([
+          redis.del("posts:all"),
+          redis.del(`post:${postId}`),
+        ]);
+
+        console.log("✅ Comment added successfully");
+        console.log("🗑️ Related caches cleared");
+
+        return "Comment added successfully";
+      } catch (error) {
+        console.error("❌ Error in addComment resolver:", error);
+        throw error;
+      }
     },
 
     addLike: async (_, { postId }, { auth }) => {
-      const user = await auth();
-      const newLike = {
-        username: user.username,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      await PostModel.addLike(postId, newLike);
-      return "Like added successfully";
+      try {
+        const user = await auth();
+
+        // Validation
+        if (!postId) {
+          throw new Error("Post ID is required");
+        }
+
+        const newLike = {
+          username: user.username,
+        };
+
+        console.log(`👍 Adding like to post ${postId} by ${user.username}`);
+        await PostModel.addLike(postId, newLike);
+
+        // Clear related caches
+        await Promise.all([
+          redis.del("posts:all"),
+          redis.del(`post:${postId}`),
+        ]);
+
+        console.log("✅ Like added successfully");
+        console.log("🗑️ Related caches cleared");
+
+        return "Like added successfully";
+      } catch (error) {
+        console.error("❌ Error in addLike resolver:", error);
+
+        // Handle specific error for already liked
+        if (error.message.includes("already liked")) {
+          throw new Error("You have already liked this post");
+        }
+
+        throw error;
+      }
+    },
+
+    removeLike: async (_, { postId }, { auth }) => {
+      try {
+        const user = await auth();
+
+        // Validation
+        if (!postId) {
+          throw new Error("Post ID is required");
+        }
+
+        console.log(`👎 Removing like from post ${postId} by ${user.username}`);
+        await PostModel.removeLike(postId, user.username);
+
+        // Clear related caches
+        await Promise.all([
+          redis.del("posts:all"),
+          redis.del(`post:${postId}`),
+        ]);
+
+        console.log("✅ Like removed successfully");
+        console.log("🗑️ Related caches cleared");
+
+        return "Like removed successfully";
+      } catch (error) {
+        console.error("❌ Error in removeLike resolver:", error);
+        throw error;
+      }
     },
   },
 };
