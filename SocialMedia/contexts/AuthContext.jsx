@@ -6,14 +6,21 @@ export const AuthContext = createContext(null);
 
 export default function AuthProvider({ children }) {
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkToken = async () => {
       try {
         const token = await getSecure("token");
-        if (token) {
+        const userData = await getSecure("user");
+
+        console.log("Token from storage:", token);
+        console.log("User data from storage:", userData);
+
+        if (token && userData) {
           setIsSignedIn(true);
+          setUser(JSON.parse(userData));
         }
       } catch (error) {
         console.log("Error checking token:", error);
@@ -34,8 +41,8 @@ export default function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext value={{ isSignedIn, setIsSignedIn }}>
+    <AuthContext.Provider value={{ isSignedIn, setIsSignedIn, user, setUser }}>
       {children}
-    </AuthContext>
+    </AuthContext.Provider>
   );
 }

@@ -17,6 +17,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { gql, useQuery } from "@apollo/client";
 import { useNavigation } from "@react-navigation/native";
 import { useFocusEffect } from "@react-navigation/native";
+import { deleteSecure } from "../helpers/secureStore";
 
 const GET_USER_PROFILE = gql`
   query GetUserProfile {
@@ -48,7 +49,7 @@ const GET_MY_FOLLOWING = gql`
 `;
 
 export default function Profile() {
-  const { setIsSignedIn } = useContext(AuthContext);
+  const { setIsSignedIn, setUser } = useContext(AuthContext);
   const navigation = useNavigation();
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
@@ -311,8 +312,13 @@ export default function Profile() {
               justifyContent: "center",
               alignItems: "center",
             }}
-            onPress={() => {
+            onPress={async () => {
               console.log("Logout pressed");
+              // Clear stored data
+              await deleteSecure("token");
+              await deleteSecure("user");
+              // Clear context
+              setUser(null);
               setIsSignedIn(false);
             }}
           >

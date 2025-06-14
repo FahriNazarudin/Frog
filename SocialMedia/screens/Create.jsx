@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -15,10 +15,11 @@ import {
 import { gql, useMutation } from "@apollo/client";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { AuthContext } from "../contexts/AuthContext";
 
 const CREATE_POST = gql`
   mutation AddPost(
-    $content: String
+    $content: String!
     $tag: String
     $imgUrl: String
     $authorId: ID
@@ -33,8 +34,25 @@ const CREATE_POST = gql`
       content
       tag
       imgUrl
+      comments {
+        content
+        username
+        createdAt
+        updatedAt
+      }
+      likes {
+        username
+        createdAt
+        updatedAt
+      }
       createdAt
       updatedAt
+      authorDetail {
+        _id
+        name
+        username
+        email
+      }
     }
   }
 `;
@@ -43,12 +61,35 @@ export default function Create() {
   const [content, setContent] = useState("");
   const [tag, setTag] = useState("");
   const [imgUrl, setImgUrl] = useState("");
-  const [authorId, setAuthorId] = useState(authorId);
   const navigation = useNavigation();
+  const { user } = useContext(AuthContext);
+
+
+  console.log("User from AuthContext:", user);
+  console.log("User ID:", user?._id);
+
+  // Jika user tidak ada, redirect ke login
+  React.useEffect(() => {
+    if (!user) {
+      console.log("User not found in AuthContext, redirecting to login");
+      Alert.alert("Authentication Required", "Please login to create a post.", [
+        {
+          text: "OK",
+          onPress: () => navigation.navigate("Login"),
+        },
+      ]);
+    }
+  }, [user, navigation]);
 
   const [createPost, { loading }] = useMutation(CREATE_POST, {
     refetchQueries: ["GetPosts"],
     onCompleted: (data) => {
+      console.log("Post created successfully:", data);
+      // Reset form
+      setContent("");
+      setTag("");
+      setImgUrl("");
+
       Alert.alert("Success", "Post created successfully!", [
         {
           text: "OK",
@@ -59,32 +100,66 @@ export default function Create() {
       ]);
     },
     onError: (error) => {
-      Alert.alert(
-        "Error",
-        error.message || "Failed to create post. Please try again."
-      );
+      console.error("GraphQL Error:", error);
+      console.error("GraphQL Errors:", error.graphQLErrors);
+      console.error("Network Error:", error.networkError);
+
+      let errorMessage = "Failed to create post. Please try again.";
+
+      if (error.graphQLErrors?.length > 0) {
+        errorMessage = error.graphQLErrors[0].message;
+      } else if (error.networkError) {
+        errorMessage = "Network error. Please check your connection.";
+      }
+
+      Alert.alert("Error", errorMessage);
     },
   });
 
   const handleCreatePost = async () => {
+    console.log("create post button pressed");
+
+    // Validasi user terlebih dahulu
+    if (!user) {
+      console.log("User not found in context");
+      Alert.alert("Error", "Please login first to create a post.");
+      navigation.navigate("Login");
+      return;
+    }
+
+    if (!user._id) {
+      console.log("User ID not found:", user);
+      Alert.alert("Error", "User ID not found. Please login again.");
+      navigation.navigate("Login");
+      return;
+    }
+
+    // Validasi content
     if (!content.trim()) {
       Alert.alert("Error", "Please enter some content for your post.");
       return;
     }
 
     try {
-      console.log("🚀 Creating post with:", { content, tag, imgUrl, authorId });
+      console.log("Creating post with user ID:", user._id);
+      console.log("Post data:", {
+        content: content.trim(),
+        tag: tag.trim() || null,
+        imgUrl: imgUrl.trim() || null,
+        authorId: user._id,
+      });
 
       await createPost({
         variables: {
-          content: content,
-          tag: tag,
-          imgUrl: imgUrl,
-          authorId: authorId,
+          content: content.trim(),
+          tag: tag.trim() || null,
+          imgUrl: imgUrl.trim() || null,
+          authorId: user._id,
         },
       });
     } catch (error) {
-      console.log("Create post catch error:", error);
+      console.log("Create post catch error:", error.message);
+      console.log("Full error:", error);
     }
   };
 
@@ -137,9 +212,9 @@ export default function Create() {
         </Text>
         <TouchableOpacity
           onPress={handleCreatePost}
-          disabled={loading || !content.trim()}
+          disabled={loading || !content.trim() || !user?._id}
           style={{
-            opacity: loading || !content.trim() ? 0.5 : 1,
+            opacity: loading || !content.trim() || !user?._id ? 0.5 : 1,
           }}
         >
           <Text

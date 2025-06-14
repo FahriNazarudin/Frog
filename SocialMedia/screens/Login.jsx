@@ -18,18 +18,23 @@ const LOGIN = gql`
   mutation Login($username: String, $password: String) {
     login(username: $username, password: $password) {
       accessToken
+      user {
+        _id
+        name
+        username
+        email
+      }
     }
   }
 `;
 export default function Login() {
-  const { setIsSignedIn } = useContext(AuthContext); 
+  const { setIsSignedIn, setUser } = useContext(AuthContext);
   const navigation = useNavigation();
-  const [ username, setUsername ] = useState("");
-  const [ password, setPassword ] = useState("");
-  const [doLogin, { loading}] = useMutation(LOGIN)
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [doLogin, { loading }] = useMutation(LOGIN);
 
   const handleLogin = async () => {
-
     try {
       const result = await doLogin({
         variables: {
@@ -37,15 +42,24 @@ export default function Login() {
           password: password,
         },
       });
-      const token = result.data.login.accessToken;      
+
+      const token = result.data.login.accessToken;
+      const userData = result.data.login.user;
+
+      console.log("Login successful, user data:", userData);
+
+      // Simpan token dan user data
       await saveSecure("token", token);
-      setIsSignedIn(true); 
+      await saveSecure("user", JSON.stringify(userData));
+
+      // Set state
+      setUser(userData);
+      setIsSignedIn(true);
     } catch (error) {
-      console.log("Login error:", error); 
+      console.log("Login error:", error);
       Alert.alert("Login Error", error.message);
     }
   };
-  
 
   return (
     <View style={styles.container}>
