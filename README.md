@@ -48,8 +48,8 @@ My Social Media App adalah aplikasi mobile social media full-stack yang dibangun
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/H8-FSJS-P3S5/gc01-FahriNazarudin.git
-cd gc01-FahriNazarudin
+git clone https://github.com/FahriNazarudin/my-social-media-app.git
+cd my-social-media-app
 ```
 
 ### 2. Setup Backend (Server)
@@ -198,7 +198,7 @@ mutation FollowUser {
 1. **Fork** repository ini
 2. **Clone** fork Anda ke lokal:
    ```bash
-   git clone https://github.com/username/gc01-FahriNazarudin.git
+   git clone https://github.com/FahriNazarudin/my-social-media-app.git
    ```
 3. **Buat branch** baru untuk fitur Anda:
    ```bash
@@ -257,7 +257,7 @@ SOFTWARE.
 - Email: fahri.nazarudin@example.com
 - LinkedIn: [Fahri Nazarudin](https://linkedin.com/in/fahrinazarudin)
 
-**Project Repository:** [gc01-FahriNazarudin](https://github.com/H8-FSJS-P3S5/gc01-FahriNazarudin)
+**Project Repository:** [my-social-media-app](https://github.com/FahriNazarudin/my-social-media-app)
 
 ---
 
