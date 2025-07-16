@@ -45,6 +45,7 @@ const postTypeDefs = `#graphql
         addComment(postId: ID!, content: String!, username: String): String
         addLike(postId: ID!, username: String): String 
         removeLike(postId: ID!, username: String): String
+        fixInvalidDates: String
     }
 `;
 
@@ -66,8 +67,40 @@ const sanitizePost = (post) => {
     imgUrl: post.imgUrl || "",
     comments: Array.isArray(post.comments) ? post.comments : [],
     likes: Array.isArray(post.likes) ? post.likes : [],
-    createdAt: post.createdAt || new Date().toISOString(),
-    updatedAt: post.updatedAt || new Date().toISOString(),
+
+    // FIX: More robust date handling to prevent Unix Epoch issue
+    createdAt: (() => {
+      if (
+        !post.createdAt ||
+        post.createdAt === "" ||
+        post.createdAt === "1970-01-01T00:00:00.000Z"
+      ) {
+        return new Date().toISOString();
+      }
+      if (typeof post.createdAt === "string") {
+        const date = new Date(post.createdAt);
+        return isNaN(date.getTime())
+          ? new Date().toISOString()
+          : date.toISOString();
+      }
+      return new Date(post.createdAt).toISOString();
+    })(),
+    updatedAt: (() => {
+      if (
+        !post.updatedAt ||
+        post.updatedAt === "" ||
+        post.updatedAt === "1970-01-01T00:00:00.000Z"
+      ) {
+        return new Date().toISOString();
+      }
+      if (typeof post.updatedAt === "string") {
+        const date = new Date(post.updatedAt);
+        return isNaN(date.getTime())
+          ? new Date().toISOString()
+          : date.toISOString();
+      }
+      return new Date(post.updatedAt).toISOString();
+    })(),
 
     // Ensure authorDetail is properly formatted
     authorDetail: post.authorDetail
@@ -92,7 +125,6 @@ const postResolvers = {
     getPosts: async (parent, args, { auth }) => {
       try {
         await auth();
-
 
         const cacheKey = "posts:all";
         const postsCache = await redis.get(cacheKey);
@@ -332,6 +364,30 @@ const postResolvers = {
         return "Like removed successfully";
       } catch (error) {
         console.error("❌ Error in removeLike resolver:", error);
+        throw error;
+      }
+    },
+
+    fixInvalidDates: async (_, args, { auth }) => {
+      try {
+        await auth(); // Ensure user is authenticated
+
+        console.log("🔧 Starting to fix invalid dates in posts...");
+        const result = await PostModel.fixInvalidDates();
+
+        // Clear all caches after fixing dates
+        await redis.del("posts:all");
+        const keys = await redis.keys("post:*");
+        if (keys.length > 0) {
+          await redis.del(...keys);
+        }
+
+        console.log("✅ Invalid dates fixed successfully");
+        console.log("🗑️ All caches cleared");
+
+        return `Fixed ${result.createdAtFixed} createdAt fields and ${result.updatedAtFixed} updatedAt fields`;
+      } catch (error) {
+        console.error("❌ Error in fixInvalidDates resolver:", error);
         throw error;
       }
     },

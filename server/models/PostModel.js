@@ -39,7 +39,6 @@ class PostModel {
       },
       {
         $addFields: {
-          // Fix: Convert array tag to string, or null if empty
           tag: {
             $cond: {
               if: { $isArray: "$tag" },
@@ -58,8 +57,51 @@ class PostModel {
           imgUrl: { $ifNull: ["$imgUrl", ""] },
           comments: { $ifNull: ["$comments", []] },
           likes: { $ifNull: ["$likes", []] },
-          createdAt: { $ifNull: ["$createdAt", new Date()] },
-          updatedAt: { $ifNull: ["$updatedAt", new Date()] },
+          // FIX: Handle invalid dates more robustly
+          createdAt: {
+            $cond: {
+              if: {
+                $and: [
+                  { $ne: ["$createdAt", null] },
+                  { $ne: ["$createdAt", ""] },
+                ],
+              },
+              then: {
+                $dateToString: {
+                  date: "$createdAt",
+                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
+                },
+              },
+              else: {
+                $dateToString: {
+                  date: "$$NOW",
+                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
+                },
+              },
+            },
+          },
+          updatedAt: {
+            $cond: {
+              if: {
+                $and: [
+                  { $ne: ["$updatedAt", null] },
+                  { $ne: ["$updatedAt", ""] },
+                ],
+              },
+              then: {
+                $dateToString: {
+                  date: "$updatedAt",
+                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
+                },
+              },
+              else: {
+                $dateToString: {
+                  date: "$$NOW",
+                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
+                },
+              },
+            },
+          },
         },
       },
       {
@@ -129,6 +171,51 @@ class PostModel {
           imgUrl: { $ifNull: ["$imgUrl", ""] },
           comments: { $ifNull: ["$comments", []] },
           likes: { $ifNull: ["$likes", []] },
+          // FIX: Handle invalid dates more robustly
+          createdAt: {
+            $cond: {
+              if: {
+                $and: [
+                  { $ne: ["$createdAt", null] },
+                  { $ne: ["$createdAt", ""] },
+                ],
+              },
+              then: {
+                $dateToString: {
+                  date: "$createdAt",
+                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
+                },
+              },
+              else: {
+                $dateToString: {
+                  date: "$$NOW",
+                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
+                },
+              },
+            },
+          },
+          updatedAt: {
+            $cond: {
+              if: {
+                $and: [
+                  { $ne: ["$updatedAt", null] },
+                  { $ne: ["$updatedAt", ""] },
+                ],
+              },
+              then: {
+                $dateToString: {
+                  date: "$updatedAt",
+                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
+                },
+              },
+              else: {
+                $dateToString: {
+                  date: "$$NOW",
+                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
+                },
+              },
+            },
+          },
         },
       },
     ];
@@ -163,8 +250,8 @@ class PostModel {
       authorId: new ObjectId(newPost.authorId),
       comments: [],
       likes: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date(), // MongoDB will handle this properly
+      updatedAt: new Date(), // MongoDB will handle this properly
     };
 
     try {
@@ -202,8 +289,8 @@ class PostModel {
     const commentData = {
       content: newComment.content.trim(),
       username: newComment.username.trim(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(), // Use Date object for consistency
+      updatedAt: new Date(), // Use Date object for consistency
     };
 
     try {
@@ -256,8 +343,8 @@ class PostModel {
 
     const likeData = {
       username: newLike.username.trim(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(), // Use Date object for consistency
+      updatedAt: new Date(), // Use Date object for consistency
     };
 
     try {
@@ -308,6 +395,63 @@ class PostModel {
     } catch (error) {
       console.error("❌ Error in removeLike:", error);
       throw new Error("Failed to remove like");
+    }
+  }
+
+  // Method to fix existing posts with invalid dates
+  static async fixInvalidDates() {
+    try {
+      const currentDate = new Date();
+
+      // Update posts with null, empty, or invalid createdAt
+      const result1 = await this.collection().updateMany(
+        {
+          $or: [
+            { createdAt: null },
+            { createdAt: { $exists: false } },
+            { createdAt: "" },
+            { createdAt: { $lt: new Date("1990-01-01") } }, // Before 1990 is likely invalid
+          ],
+        },
+        {
+          $set: {
+            createdAt: currentDate,
+            updatedAt: currentDate,
+          },
+        }
+      );
+
+      // Update posts with null, empty, or invalid updatedAt
+      const result2 = await this.collection().updateMany(
+        {
+          $or: [
+            { updatedAt: null },
+            { updatedAt: { $exists: false } },
+            { updatedAt: "" },
+            { updatedAt: { $lt: new Date("1990-01-01") } }, // Before 1990 is likely invalid
+          ],
+        },
+        {
+          $set: {
+            updatedAt: currentDate,
+          },
+        }
+      );
+
+      console.log(
+        `✅ Fixed ${result1.modifiedCount} posts with invalid createdAt`
+      );
+      console.log(
+        `✅ Fixed ${result2.modifiedCount} posts with invalid updatedAt`
+      );
+
+      return {
+        createdAtFixed: result1.modifiedCount,
+        updatedAtFixed: result2.modifiedCount,
+      };
+    } catch (error) {
+      console.error("❌ Error fixing invalid dates:", error);
+      throw new Error("Failed to fix invalid dates");
     }
   }
 }

@@ -1,9 +1,84 @@
-import { Entypo, Feather, FontAwesome } from "@expo/vector-icons";
+import { Entypo, Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { StyleSheet, View, Text, Image, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import { gql, useMutation } from "@apollo/client";
+import { useContext, useState, useEffect } from "react";
+import { AuthContext } from "../contexts/AuthContext";
+
+const ADD_LIKE = gql`
+  mutation AddLike($postId: ID!) {
+    addLike(postId: $postId)
+  }
+`;
+
+const REMOVE_LIKE = gql`
+  mutation RemoveLike($postId: ID!) {
+    removeLike(postId: $postId)
+  }
+`;
 
 export default function CardPost({ post }) {
   const navigation = useNavigation();
+  const { user } = useContext(AuthContext);
+  const [isLiked, setIsLiked] = useState(false);
+
+  // Check if current user has liked this post
+  useEffect(() => {
+    if (post && user) {
+      const userLike = post.likes?.find(
+        (like) => like.username === user.username
+      );
+      setIsLiked(!!userLike);
+    }
+  }, [post, user]);
+
+  const [addLike, { loading: likeLoading }] = useMutation(ADD_LIKE, {
+    onCompleted: () => {
+      setIsLiked(true);
+    },
+    onError: (error) => {
+      console.log("Like error:", error);
+    },
+    refetchQueries: ["GetPosts"],
+  });
+
+  const [removeLike, { loading: unlikeLoading }] = useMutation(REMOVE_LIKE, {
+    onCompleted: () => {
+      setIsLiked(false);
+    },
+    onError: (error) => {
+      console.log("Unlike error:", error);
+    },
+    refetchQueries: ["GetPosts"],
+  });
+
+  const handleLike = async () => {
+    if (!user) {
+      Alert.alert("Error", "Please login to like posts");
+      return;
+    }
+
+    try {
+      if (isLiked) {
+        await removeLike({
+          variables: { postId: post._id },
+        });
+      } else {
+        await addLike({
+          variables: { postId: post._id },
+        });
+      }
+    } catch (error) {
+      console.log("Handle like error:", error);
+    }
+  };
 
   const handleNavigateToDetail = () => {
     navigation.push("Detail", { _id: post._id });
@@ -121,8 +196,19 @@ export default function CardPost({ post }) {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <TouchableOpacity style={{ marginRight: 16 }}>
-            <Feather name="heart" size={21} color="black" />
+          <TouchableOpacity
+            style={{ marginRight: 16 }}
+            onPress={handleLike}
+            disabled={likeLoading || unlikeLoading}
+          >
+            <Ionicons
+              name={isLiked ? "heart" : "heart-outline"}
+              size={21}
+              color={isLiked ? "#FF6B6B" : "black"}
+              style={{
+                opacity: likeLoading || unlikeLoading ? 0.5 : 1,
+              }}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             style={{ marginRight: 16 }}
@@ -221,13 +307,15 @@ export default function CardPost({ post }) {
           marginTop: 8,
         }}
       >
-        {new Date(parseInt(post.createdAt)).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
+        {post.createdAt
+          ? new Date(post.createdAt).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "Just now"}
       </Text>
     </View>
   );

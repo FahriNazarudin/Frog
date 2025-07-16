@@ -70,7 +70,6 @@ export default function PostDetail({ route }) {
     variables: { getPostByIdId: _id },
     errorPolicy: "all",
     onCompleted: (data) => {
-
       const post = data?.getPostById;
       if (post && user) {
         const userLike = post.likes?.find(
@@ -342,7 +341,6 @@ export default function PostDetail({ route }) {
             style={{
               backgroundColor: "#FFFFFF",
               padding: 10,
-
             }}
           >
             <View
@@ -390,15 +388,12 @@ export default function PostDetail({ route }) {
                 }}
               >
                 {post.createdAt
-                  ? new Date(parseInt(post.createdAt)).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )
+                  ? new Date(post.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
                   : "Just now"}
               </Text>
             </View>
@@ -571,14 +566,15 @@ export default function PostDetail({ route }) {
                       }}
                     >
                       {comment.createdAt
-                        ? new Date(
-                            parseInt(comment.createdAt)
-                          ).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
+                        ? new Date(comment.createdAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )
                         : "Just now"}
                     </Text>
                   </View>
