@@ -1,20 +1,18 @@
 # My Social Media App
 
-[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=19733285&assignment_repo_type=AssignmentRepo)
+## 📱 Description
 
-## 📱 Deskripsi Singkat
+My Social Media App is a full-stack mobile social media application built using React Native with Expo and GraphQL Apollo Server. This application allows users to share posts, comment, like content, and follow other users in a secure and responsive environment.
 
-My Social Media App adalah aplikasi mobile social media full-stack yang dibangun menggunakan React Native dengan Expo dan GraphQL Apollo Server. Aplikasi ini memungkinkan pengguna untuk berbagi postingan, berkomentar, menyukai konten, dan mengikuti pengguna lain dalam lingkungan yang aman dan responsif.
+### ✨ Key Features
 
-### ✨ Fitur Utama
-
-- 🔐 **Autentikasi**: Register dan Login dengan JWT
-- 📝 **Post Management**: Membuat, melihat, dan mengelola postingan
-- 💬 **Komentar**: Sistem komentar embedded dalam postingan
-- 👤 **Pencarian User**: Cari pengguna berdasarkan nama atau username
-- 👥 **Follow System**: Mengikuti dan diikuti pengguna lain
-- ❤️ **Like System**: Menyukai postingan dengan total like counter
-- 📊 **Analytics**: Menampilkan jumlah followers dan following
+-  **Authentication**: Register and Login with JWT
+-  **Post Management**: Create, view, and manage posts
+-  **Comments**: Embedded comment system within posts
+-  **User Search**: Search users by name or username
+-  **Follow System**: Follow and be followed by other users
+-  **Like System**: Like posts with total like counter
+-  **User Profile**: Display followers and following count
 
 ### 🛠️ Tech Stack
 
@@ -35,11 +33,11 @@ My Social Media App adalah aplikasi mobile social media full-stack yang dibangun
 - Expo Secure Store
 - Context API for State Management
 
-## 🚀 Cara Instalasi dan Penggunaan
+## 🚀 Installation and Usage
 
 ### Prerequisites
 
-- Node.js (v16 atau lebih baru)
+- Node.js (v16 or newer)
 - MongoDB
 - Redis
 - Expo CLI
@@ -52,10 +50,10 @@ git clone https://github.com/FahriNazarudin/my-social-media-app.git
 cd my-social-media-app
 ```
 
-### 2. Setup Backend (Server)
+### 2. Backend Setup (Server)
 
 ```bash
-# Masuk ke folder server
+# Navigate to server folder
 cd server
 
 # Install dependencies
@@ -63,30 +61,30 @@ npm install
 
 # Setup environment variables
 cp .env.example .env
-# Edit .env dengan konfigurasi database dan Redis Anda
+# Edit .env with your database and Redis configuration
 
-# Jalankan server
+# Run server
 npm run dev
 ```
 
-### 3. Setup Frontend (Mobile App)
+### 3. Frontend Setup (Mobile App)
 
 ```bash
-# Masuk ke folder SocialMedia
+# Navigate to SocialMedia folder
 cd ../SocialMedia
 
 # Install dependencies
 npm install
 
-# Jalankan aplikasi
+# Run application
 npm start
-# atau
+# or
 npx expo start
 ```
 
 ### 4. Environment Variables
 
-Buat file `.env` di folder `server` dengan konfigurasi:
+Create a `.env` file in the `server` folder with the following configuration:
 
 ```env
 MONGODB_URI=mongodb://localhost:27017/socialmedia
@@ -95,7 +93,7 @@ JWT_SECRET=your-jwt-secret-key
 PORT=3000
 ```
 
-## 📝 Contoh Penggunaan
+## 📝 Usage Examples
 
 ### GraphQL Queries & Mutations
 
@@ -192,106 +190,52 @@ mutation FollowUser {
 }
 ```
 
-## 🤝 Cara Berkontribusi
+## 🤝 Contributing
 
-1. **Fork** repository ini
-2. **Clone** fork Anda ke lokal:
+1. **Fork** this repository
+2. **Clone** your fork locally:
    ```bash
    git clone https://github.com/FahriNazarudin/my-social-media-app.git
    ```
-3. **Buat branch** baru untuk fitur Anda:
+3. **Create** a new branch for your feature:
    ```bash
-   git checkout -b feature/nama-fitur
+   git checkout -b feature/feature-name
    ```
-4. **Commit** perubahan Anda:
+4. **Commit** your changes:
    ```bash
-   git commit -m "Add: deskripsi fitur baru"
+   git commit -m "Add: new feature description"
    ```
-5. **Push** ke branch Anda:
+5. **Push** to your branch:
    ```bash
-   git push origin feature/nama-fitur
+   git push origin feature/feature-name
    ```
-6. **Buat Pull Request** di GitHub
+6. **Create** a Pull Request on GitHub
 
-### Guidelines Kontribusi
+### Contributing Guidelines
 
-- Pastikan kode mengikuti style guide yang sudah ada
-- Tambahkan test untuk fitur baru
-- Update dokumentasi jika diperlukan
-- Pastikan semua test pass sebelum submit PR
+- Ensure code follows the existing style guide
+- Add tests for new features
+- Update documentation if necessary
+- Make sure all tests pass before submitting PR
 
-## 📄 Lisensi
+## ScreenShot App
 
-Project ini dilisensikan under MIT License. Lihat file [LICENSE](LICENSE) untuk detail lengkap.
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 17" src="https://github.com/user-attachments/assets/0297e188-b85c-453d-aa6e-11efd1543864" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 12" src="https://github.com/user-attachments/assets/eb6d6b52-9ce1-4ffb-8c72-54c9d15283a9" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 01" src="https://github.com/user-attachments/assets/865e5857-e47b-4ac5-8159-88a301e7d381" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 54" src="https://github.com/user-attachments/assets/d7dd41de-6d8c-4c89-9f73-ba29a3e0cb74" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 30" src="https://github.com/user-attachments/assets/54315b6e-18fe-4061-9a81-760c2541ab92" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 47" src="https://github.com/user-attachments/assets/a51c028a-fe22-46cf-bc02-c206361e9135" />
 
-```
-MIT License
 
-Copyright (c) 2025 Fahri Nazarudin
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-## 📞 Kontak
+## 📞 Contact
 
 **Fahri Nazarudin**
 
-- GitHub: [@fahrinzrdn](https://github.com/fahrinzrdn)
+
 - Email: fahri.nazarudin@example.com
 - LinkedIn: [Fahri Nazarudin](https://linkedin.com/in/fahrinazarudin)
 
 **Project Repository:** [my-social-media-app](https://github.com/FahriNazarudin/my-social-media-app)
 
 ---
-
-## 🎯 Fitur Development Checklist
-
-### Fitur Backend
-
-- [x] Fitur Register
-- [x] Fitur Login
-- [x] Fitur Add Post
-- [x] Fitur Show Post (berdasarkan yang paling baru)
-- [x] Fitur Comment Post (Embedded Document)
-- [x] Fitur search user berdasarkan nama atau username
-- [x] Fitur follow
-- [x] Menampilkan Followers dan Following dari setiap user (Reference with $lookup)
-- [x] Fitur Like Post
-- [x] Menampilkan total like dari setiap post
-
-### Fitur Frontend
-
-- [x] UI/UX Design
-- [x] Authentication Flow
-- [x] Post Creation & Display
-- [x] Comment System
-- [x] User Search
-- [x] Follow/Unfollow System
-- [x] Like/Unlike Posts
-- [x] Profile Management
-- [x] Navigation System
-
-### Performance & Security
-
-- [x] Redis Caching
-- [x] JWT Authentication
-- [x] Password Hashing
-- [x] Input Validation
-- [x] Error Handling
-- [x] Cache Invalidation
