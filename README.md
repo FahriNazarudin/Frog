@@ -220,12 +220,12 @@ mutation FollowUser {
 
 ## ScreenShot App
 
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 17" src="https://github.com/user-attachments/assets/0297e188-b85c-453d-aa6e-11efd1543864" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 12" src="https://github.com/user-attachments/assets/eb6d6b52-9ce1-4ffb-8c72-54c9d15283a9" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 01" src="https://github.com/user-attachments/assets/865e5857-e47b-4ac5-8159-88a301e7d381" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 54" src="https://github.com/user-attachments/assets/d7dd41de-6d8c-4c89-9f73-ba29a3e0cb74" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 30" src="https://github.com/user-attachments/assets/54315b6e-18fe-4061-9a81-760c2541ab92" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 47" src="https://github.com/user-attachments/assets/a51c028a-fe22-46cf-bc02-c206361e9135" />
+<img width="350" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 17" src="https://github.com/user-attachments/assets/0297e188-b85c-453d-aa6e-11efd1543864" />
+<img width="350" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 12" src="https://github.com/user-attachments/assets/eb6d6b52-9ce1-4ffb-8c72-54c9d15283a9" />
+<img width="350" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 50 01" src="https://github.com/user-attachments/assets/865e5857-e47b-4ac5-8159-88a301e7d381" />
+<img width="350" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 54" src="https://github.com/user-attachments/assets/d7dd41de-6d8c-4c89-9f73-ba29a3e0cb74" />
+<img width="350" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 30" src="https://github.com/user-attachments/assets/54315b6e-18fe-4061-9a81-760c2541ab92" />
+<img width="350" alt="Simulator Screenshot - iPhone 16 Pro - 2025-07-16 at 11 49 47" src="https://github.com/user-attachments/assets/a51c028a-fe22-46cf-bc02-c206361e9135" />
 
 
 ## 📞 Contact
@@ -236,6 +236,5 @@ mutation FollowUser {
 - Email: fahri.nazarudin@example.com
 - LinkedIn: [Fahri Nazarudin](https://linkedin.com/in/fahrinazarudin)
 
-**Project Repository:** [my-social-media-app](https://github.com/FahriNazarudin/my-social-media-app)
 
 ---
