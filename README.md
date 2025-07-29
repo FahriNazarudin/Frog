@@ -1,8 +1,8 @@
-# My Social Media App
+# Frog
 
 ## 📱 Description
 
-My Social Media App is a full-stack mobile social media application built using React Native with Expo and GraphQL Apollo Server. This application allows users to share posts, comment, like content, and follow other users in a secure and responsive environment.
+Frog is a full-stack mobile social media application built using React Native with Expo and GraphQL Apollo Server. This application allows users to share posts, comment, like content, and follow other users in a secure and responsive environment.
 
 ### ✨ Key Features
 
